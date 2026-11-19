@@ -261,7 +261,7 @@ IMG-JIANGCHEN-SHEET 在当前集内重复，后出现的条目会遮蔽前一条
 
 ### 升级到新版本后要做什么？
 
-把[安装](#安装)命令里 `@winterhuan/oh-story-dsh@` 后的版本号改成最新版，重新运行 `plugin add` 并重启 DSH 即可，内置 Skills 与 Roles 会随插件自动更新。旧版工程的字段与参数迁移说明见 [CHANGELOG.md](CHANGELOG.md)。
+把[安装](#安装)命令里的 Release 版本号和 tarball 文件名改成最新版，重新运行 `plugin add` 并重启 DSH 即可，内置 Skills 与 Roles 会随插件自动更新。旧版工程的字段与参数迁移说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 致谢
 
