@@ -49,7 +49,6 @@ const DSH_SKILL_OVERRIDES: Readonly<Partial<Record<string, string>>> = {
   "story-deslop": "Use the bundled narrative-writer Role through oh_story_role when specialist review is useful. Never inspect platform agent directories.",
   "story-short-analyze": "Use oh_story_role for specialist analysis. Never inspect platform agent directories or require external Agent deployment.",
   "story-short-write": `All named Roles are provided through oh_story_role. Do not inspect platform agent files; preserve the upstream short-fiction workflow and quality gates. ${DSH_AUTHOR_MEMORY_WORKSPACE}`,
-  "browser-cdp": "Use only browser or web capabilities visible in the current DSH preset. Do not start a parallel browser host; if no compatible capability is visible, explain the limitation.",
   "story-cover": "Use only image-generation or HTTP capabilities visible in the current DSH preset. Never assume a separate Codex or Claude runtime. When no such capability is visible, offer the upstream prompt-only mode instead of a paid API.",
   "story-publish": "Prepare the listing file only. Never sign in to, fill in, or submit anything on a platform's author backend, even when a browser tool is visible in the current DSH preset; hand the author the saved 发布资料 file instead."
 };
@@ -134,6 +133,7 @@ const DSH_NATIVE_SKILLS: Readonly<Partial<Record<string, string>>> = {
   续写；导完短篇用 /story-short-write 补完构思
 - 审稿与去 AI 味：story-review、story-deslop
 - 封面：story-cover（只要封面提示词、不生图时也走它）
+- 浏览器操作：直接使用官方 ego-browser Skill，执行 ego-browser skill 并按当前指南操作
 - 整理平台建书资料（发布资料、建书表单、平台书名/简介/标签）：story-publish；只说「开书」
   照常进 story-long-write
 - 查本书的角色、伏笔、进度或设定：用 oh_story_role 调用 story-explorer；查外部资料：
@@ -184,16 +184,6 @@ Agent 过程通过右侧动态栏或官方 Chat 查看。禁止启动独立 Dash
 
 题材、角色、节奏、冲突、开篇和写作方法资料位于 references/agent-references/；
 只加载当前任务需要的文件。`,
-  "browser-cdp": `# browser-cdp — DSH 浏览器能力适配
-
-本 Skill 不启动 Chrome、CDP 端口、独立浏览器 Host 或 setup-cdp-chrome.js。
-仅使用当前 DSH Preset 已暴露的 web_search、web_fetch 或浏览器工具完成网页读取、
-榜单采集和资料核验。保持以下原则：
-
-1. 优先使用结构化搜索/抓取工具；需要登录态或交互页面时才使用可见浏览器能力。
-2. 尊重站点条款、访问频率与用户授权；不绕过验证码、付费墙或访问控制。
-3. 记录来源 URL、采集时间、失败项和数据质量，不把推断写成页面事实。
-4. 当前 Preset 没有兼容能力时，说明缺失能力和可行的手工步骤，不另起运行时。`,
   "story-long-scan": `# story-long-scan — DSH 原生长篇扫榜
 
 基于可核验样本识别长篇网文趋势，不运行打包脚本、不提取登录凭据，也不绕过验证码、
@@ -220,7 +210,8 @@ Agent 过程通过右侧动态栏或官方 Chat 查看。禁止启动独立 Dash
    参照），并告诉作者可用 story-long-analyze 拆它们来验证「能爆的原因」。
 
 当前 Preset 没有网页能力且用户也未提供样本时，使用内置参考完成方法论分析，
-并列出仍需核验的榜单；不要启动 CDP、独立浏览器或并行运行时。`,
+并列出仍需核验的榜单。需要真实页面或登录态时，直接使用官方 ego-browser Skill，执行 ego-browser skill 并按当前指南操作；
+不可用时说明缺项，失败样本排除并说明。`,
   "story-short-scan": `# story-short-scan — DSH 原生短篇扫榜
 
 基于可核验样本识别短篇市场的情绪、题材与传播信号，不运行打包脚本、不读取 Cookie
@@ -249,7 +240,8 @@ Agent 过程通过右侧动态栏或官方 Chat 查看。禁止启动独立 Dash
    作者自己给榜单时，按 references/manual-rank-input.md 的格式整理。
 
 当前 Preset 没有网页能力且用户也未提供样本时，只做历史资料分析并列出验证动作；
-不要启动 CDP、独立浏览器或并行运行时。`
+需要真实页面时直接使用官方 ego-browser Skill，执行 ego-browser skill 并按当前指南操作。
+浏览器不可用时报告缺口。黑岩只读公开书库，不索要或提取作者后台凭据。`
 };
 
 interface ParsedSkill {
@@ -316,18 +308,20 @@ export function defaultNovelToGameSkillRoot(): string {
 function createBundledSkillProvider(
   providerName: string,
   skillRoot: string,
-  content: (name: string, source: string) => string
+  content: (name: string, source: string) => string,
+  excludedSkills: readonly string[] = []
 ): SkillProvider {
   const root = resolve(skillRoot);
   return {
     name: providerName,
     async list(): Promise<readonly SkillCandidate[]> {
       const directories = (await readdir(root, { withFileTypes: true }))
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => entry.isDirectory() && !excludedSkills.includes(entry.name))
         .map((entry) => entry.name)
         .sort();
       return Promise.all(directories.map(async (directory): Promise<SkillCandidate> => {
-        const path = join(root, directory, "SKILL.md");
+        const directoryRoot = join(root, directory);
+        const path = join(directoryRoot, "SKILL.md");
         const parsed = parseBundledSkill(await readFile(path, "utf8"));
         if (parsed.name !== directory) throw new Error(`Bundled skill directory "${directory}" does not match name "${parsed.name}".`);
         return {
@@ -336,7 +330,7 @@ function createBundledSkillProvider(
           invocation: { modelInvocable: true, userInvocable: parsed.userInvocable },
           provider: providerName,
           source: "bundled",
-          resourceBase: { kind: "directory", path: join(root, directory) },
+          resourceBase: { kind: "directory", path: directoryRoot },
           rank: BUNDLED_SKILL_RANK,
           locator: pathToFileURL(path),
           path
@@ -344,12 +338,15 @@ function createBundledSkillProvider(
       }));
     },
     async get(candidate): Promise<SkillDefinition | undefined> {
-      if (candidate.provider !== providerName || typeof candidate.path !== "string") return undefined;
+      if (candidate.provider !== providerName || typeof candidate.path !== "string" || excludedSkills.includes(candidate.name)) return undefined;
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(candidate.name)) return undefined;
       const path = resolve(candidate.path);
-      const relativePath = relative(root, path);
+      const directoryRoot = join(root, candidate.name);
+      const relativePath = relative(directoryRoot, path);
       if (relativePath === "" || relativePath.startsWith("..") || isAbsolute(relativePath)) {
         throw new Error("Bundled skill locator escaped the packaged skill root.");
       }
+      if (path !== join(directoryRoot, "SKILL.md")) throw new Error("Bundled skill locator is not its registered entrypoint.");
       const parsed = parseBundledSkill(await readFile(path, "utf8"));
       if (parsed.name !== candidate.name) return undefined;
       return {
@@ -358,7 +355,7 @@ function createBundledSkillProvider(
         invocation: { modelInvocable: true, userInvocable: parsed.userInvocable },
         provider: providerName,
         source: "bundled",
-        resourceBase: { kind: "directory", path: join(root, parsed.name) },
+        resourceBase: { kind: "directory", path: directoryRoot },
         path,
         content: content(parsed.name, parsed.content)
       };
@@ -367,7 +364,7 @@ function createBundledSkillProvider(
 }
 
 export function createOhStorySkillProvider(skillRoot = defaultBundledSkillRoot()): SkillProvider {
-  return createBundledSkillProvider(STORY_PROVIDER_NAME, skillRoot, dshSkillContent);
+  return createBundledSkillProvider(STORY_PROVIDER_NAME, skillRoot, dshSkillContent, ["browser-cdp"]);
 }
 
 export function dshDramaSkillContent(name: string, content: string, skillRoot = defaultDramaSkillRoot()): string {

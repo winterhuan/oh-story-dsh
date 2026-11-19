@@ -177,7 +177,7 @@ export function WelcomeGuide({
       <li>想放进自己的作品文件夹：点击左侧「工作区 / Workspaces」旁的「添加工作区 / Add workspace」，在系统弹出的文件夹窗口里选择，再在下方「选择工作区 / Choose workspace」中选中它。</li>
       <li>输入框右下角显示模型名就说明已配置好；没有模型时，在「设置 → 模型」填入 API Key。只查看已有作品无需 API Key。</li>
     </ol>
-    <p className="oh-story-welcome-note">不需要空白会话提示时可点击右上角「关闭欢迎引导」，之后可在左侧「插件 → @oh-story/dsh」或配置项 <code>welcomeGuide</code> 重新开启。</p>
+    <p className="oh-story-welcome-note">不需要空白会话提示时可点击右上角「关闭欢迎引导」，之后可在左侧「插件 → @winterhuan/oh-story-dsh」或配置项 <code>welcomeGuide</code> 重新开启。</p>
   </section>;
 }
 

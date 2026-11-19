@@ -18,7 +18,18 @@ describe("bundled Oh Story roles", () => {
       expect(persona).toContain("call oh_story_bundled_reference with the exact story-setup/references/agent-references path");
       expect(persona).toContain("Never call the generic skill tool");
       expect(persona).toContain("fall back to a legacy platform path");
-      expect(persona).toContain(source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "").trim());
+      if (name === "story-researcher") {
+        expect(persona).toContain("ego-browser skill");
+        expect(persona).toContain("官方当前版本指南");
+        expect(persona).not.toContain("Box");
+        expect(persona).toContain("## 来源可靠性评估");
+        expect(persona).toContain("## 研究场景");
+        expect(persona).not.toContain("agent-browser --cdp");
+        expect(persona).not.toContain("127.0.0.1:");
+        expect(persona).not.toContain("cdp_port");
+      } else {
+        expect(persona).toContain(source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/u, "").trim());
+      }
     }
   });
 

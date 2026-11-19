@@ -14,6 +14,9 @@ const root = resolve(import.meta.dirname, "..");
 const packageRoot = resolve(root, "packages/dsh-plugin");
 const outputRoot = resolve(packageRoot, "lib");
 const ohStoryBundleExcluded = [
+  "skills/browser-cdp/",
+  "skills/story-long-scan/references/platform-",
+  "skills/story-short-scan/references/platform-",
   "skills/story-long-scan/scripts/",
   "skills/story-short-scan/scripts/",
   ...ohStoryPlatformGlue
@@ -69,7 +72,7 @@ await build({
   minify: true,
   external: ["@deepseek-ai/*", "react", "react/jsx-runtime", "react-dom", "react-dom/client"],
   plugins: [inlineCss],
-  banner: { js: "window.__ModuleLoader__.load({id:\"@oh-story/dsh\",factory:(require)=>{var module={exports:{}};var exports=module.exports;" },
+  banner: { js: "window.__ModuleLoader__.load({id:\"@winterhuan/oh-story-dsh\",factory:(require)=>{var module={exports:{}};var exports=module.exports;" },
   footer: { js: ";return module.exports;}});" }
 });
 

@@ -241,8 +241,8 @@ test("CI proof fetches attempt jobs and suite before the final run race guard", 
       return [run];
     },
     githubJson: async (url) => {
-      if (url.endsWith("/zenstory-ai/oh-story-dsh")) {
-        return { full_name: "zenstory-ai/oh-story-dsh", private: false, default_branch: "main" };
+      if (url.endsWith("/winterhuan/oh-story-dsh")) {
+        return { full_name: "winterhuan/oh-story-dsh", private: false, default_branch: "main" };
       }
       if (url.endsWith("/branches/main")) return { name: "main", protected: true };
       if (url.endsWith("/actions/workflows/ci.yml")) return { id: 123, path: ".github/workflows/ci.yml" };
@@ -259,7 +259,7 @@ test("CI proof fetches attempt jobs and suite before the final run race guard", 
   };
   await assert.rejects(
     createCiProof(
-      { repository: "zenstory-ai/oh-story-dsh", sha: sourceSha, tag: "v1.2.3" },
+      { repository: "winterhuan/oh-story-dsh", sha: sourceSha, tag: "v1.2.3" },
       dependencies,
     ),
     /run attempt changed/,
@@ -270,8 +270,8 @@ test("CI proof fetches attempt jobs and suite before the final run race guard", 
 test("npm writer source gate rejects a moved tag and noncanonical repository", () => {
   const sourceSha = "7".repeat(40);
   const valid = {
-    repository: "zenstory-ai/oh-story-dsh",
-    repositoryMetadata: { full_name: "zenstory-ai/oh-story-dsh", private: false, default_branch: "main" },
+    repository: "winterhuan/oh-story-dsh",
+    repositoryMetadata: { full_name: "winterhuan/oh-story-dsh", private: false, default_branch: "main" },
     mainBranch: { name: "main", protected: true },
     sourceSha,
     remoteTagSha: sourceSha,
@@ -310,7 +310,7 @@ test("consumer rejects coordinated manifest and proof substitution using produce
 
 test("manifest binds bytes, source, run attempt, and expected package entries", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "dsh-release-test-"));
-  const tarball = path.join(directory, "oh-story-dsh-1.2.3.tgz");
+  const tarball = path.join(directory, "winterhuan-oh-story-dsh-1.2.3.tgz");
   await writeFile(tarball, "immutable tarball bytes");
   const manifest = await createReleaseManifest({
     tarball,
@@ -319,7 +319,12 @@ test("manifest binds bytes, source, run attempt, and expected package entries", 
   });
   assert.match(manifest.files[0].sha256, /^[a-f0-9]{64}$/);
   assert.match(manifest.files[0].integrity, /^sha512-/);
+  assert.equal(manifest.package, "@winterhuan/oh-story-dsh");
   await verifyReleaseManifest({ manifest, directory, expectedSourceSha: "c".repeat(40) });
+  await assert.rejects(
+    verifyReleaseManifest({ manifest: { ...manifest, package: "@upstream/dsh" }, directory, expectedSourceSha: "c".repeat(40) }),
+    /release manifest package mismatch/,
+  );
   await writeFile(tarball, "different bytes");
   await assert.rejects(
     verifyReleaseManifest({ manifest, directory, expectedSourceSha: "c".repeat(40) }),
@@ -390,9 +395,9 @@ test("npm idempotency only accepts the exact local integrity", () => {
 
 test("npm publish receives a local absolute tarball, never a GitHub shorthand", () => {
   for (const directory of ["release", "./release", path.resolve("release with spaces")]) {
-    const args = npmPublishArguments(directory, "oh-story-dsh-0.1.13.tgz");
+    const args = npmPublishArguments(directory, "winterhuan-oh-story-dsh-0.1.13.tgz");
     assert.equal(args[0], "publish");
-    assert.equal(args[1], path.resolve(directory, "oh-story-dsh-0.1.13.tgz"));
+    assert.equal(args[1], path.resolve(directory, "winterhuan-oh-story-dsh-0.1.13.tgz"));
     assert.ok(path.isAbsolute(args[1]));
     assert.deepEqual(args.slice(2), ["--access", "public", "--provenance", "--ignore-scripts"]);
   }

@@ -1,12 +1,14 @@
-# @oh-story/dsh
+> 此 fork 的包名为 `@winterhuan/oh-story-dsh`。下方示例安装 GitHub Release 预构建包；源码构建可在仓库根目录运行 `pnpm install --frozen-lockfile` 和 `pnpm pack:release`。原项目：[zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh)。
 
-[GitHub](https://github.com/zenstory-ai/oh-story-dsh) · [项目主页](https://zenstory.ai/zh/dsh) · [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) · [CHANGELOG](https://github.com/zenstory-ai/oh-story-dsh/blob/main/CHANGELOG.md) · [MIT](LICENSE)
+# @winterhuan/oh-story-dsh
+
+[GitHub](https://github.com/winterhuan/oh-story-dsh) · [项目主页](https://zenstory.ai/zh/dsh) · [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) · [CHANGELOG](https://github.com/winterhuan/oh-story-dsh/blob/main/CHANGELOG.md) · [MIT](LICENSE)
 
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）打造的开源小说、短剧、互动游戏与视频解说创作工作台插件。Agent、会话、模型、权限审批与原生对话全部由 DSH 驱动，所有创作产物直接以普通文件保存在本地工作区中。
 
 | 工作台 | 内置技能包（随包固定版本） | 常用命令 |
 | --- | --- | --- |
-| **小说** | Oh Story `0.10.5`（14 Skills · 7 Roles） | `/story`、`/story-long-write`、`/story-review`、`/story-publish` |
+| **小说** | Oh Story `0.10.5`（13 Skills · 7 Roles） | `/story`、`/story-long-write`、`/story-review`、`/story-publish` |
 | **短剧** | Drama Skills `0.12.1`（12 Skills） | `/short-drama`、`/short-drama-write`、`/short-drama-storyboard`、`/short-drama-edit` |
 | **互动游戏** | NovelToGame `0.9.0`（5 Skills） | `/novel-to-game quick`、`/game-build`、`/game-qa` |
 | **视频解说** | video-recap-skills `0.7.1`（2 Skills） | `/video-recap`、`/video-reference` |
@@ -18,20 +20,17 @@
 环境要求 **Node.js 24.9+**（安装命令已内置临时 `pnpm`，无需提前全局安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add @oh-story/dsh@0.1.27 &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
-```
-
-也可直接安装 GitHub Release 预构建包：
-
-```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add https://github.com/zenstory-ai/oh-story-dsh/releases/download/v0.1.27/oh-story-dsh-0.1.27.tgz &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
 保持终端运行，若浏览器未自动打开，复制终端打印的完整 `http://127.0.0.1:3080/?token=...` 链接完成首次认证。在 DSH「设置 → 模型」中配置 Provider 与 API Key（或启动前设置环境变量 `DEEPSEEK_API_KEY`）；仅浏览本地已有项目可选择「稍后配置」。
 
 安装与启动请使用同一个 DSH 版本。默认配套 `0.2.2-rc.1`，同时兼容 `>=0.2.0-rc.2 <0.2.1-0`、`>=0.2.1-alpha.1 <0.2.2-0` 与 `>=0.2.2-alpha.2 <0.2.3-0`（含 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`）。
+
+## 浏览器资料与扫榜
+
+需要真实网页或登录态时，直接使用官方 `ego-browser` Skill，运行 `ego-browser skill` 并按当前版本指南操作。插件提供 13 个小说技能和 7 个角色，不提供 `browser-cdp`、浏览器封装或额外脚本。Ego 的安装与使用见 [官方文档](https://lite.ego.app/document/zh/docs/ego-browser)。扫榜数据和结论仍由相应写作技能保存。
 
 ## 四个创作工作台
 
@@ -69,16 +68,16 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 若希望默认 `web` profile 保持纯净，可将插件装入独立 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add @oh-story/dsh@0.1.27
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz"
 ```
 
-将 `~/.dsh/profiles/story/package.json` 中的 `dsh.profile.bundles` 设为 `["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@oh-story/dsh"]`，随后即可用 `npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081` 独立启动创作工作台。
+将 `~/.dsh/profiles/story/package.json` 中的 `dsh.profile.bundles` 设为 `["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@winterhuan/oh-story-dsh"]`，随后即可用 `npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081` 独立启动创作工作台。
 
 ## 常见问题与升级说明
 
 - **安装报 `pnpm not found on PATH`**：执行上方带 `--package pnpm@11.7.0` 的完整安装命令。
-- **未看到工作台标签或技能未生效**：添加并打开已有作品目录即可自动展开工作台；空目录新建作品需当前会话模式支持技能加载（如 `Standard`、`PTC`，`Minimal` 模式不加载插件技能），在 Chat 中运行 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap` 生成首个创作文件；已收起的工作台可点会话区的「创作工作台」恢复。空白会话欢迎引导可点右上角「关闭欢迎引导」，或在「插件 → `@oh-story/dsh`」随时开关。
-- **旧项目升级提示**：Drama Skills `0.12.0` 前的短剧文档只浏览无需改动，续写或跑 `creator_markdown_check.py` 前需将旧字段名改为现行直白名称；video-recap `0.7+` 续跑旧 `work/` 时需去掉 `--edit-mode dub`、`--review-narration` 等已移除参数。完整说明见仓库 [README](https://github.com/zenstory-ai/oh-story-dsh#升级到新版本后要做什么) 与 [CHANGELOG](https://github.com/zenstory-ai/oh-story-dsh/blob/main/CHANGELOG.md)。
+- **未看到工作台标签或技能未生效**：添加并打开已有作品目录即可自动展开工作台；空目录新建作品需当前会话模式支持技能加载（如 `Standard`、`PTC`，`Minimal` 模式不加载插件技能），在 Chat 中运行 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap` 生成首个创作文件；已收起的工作台可点会话区的「创作工作台」恢复。空白会话欢迎引导可点右上角「关闭欢迎引导」，或在「插件 → `@winterhuan/oh-story-dsh`」随时开关。
+- **旧项目升级提示**：Drama Skills `0.12.0` 前的短剧文档只浏览无需改动，续写或跑 `creator_markdown_check.py` 前需将旧字段名改为现行直白名称；video-recap `0.7+` 续跑旧 `work/` 时需去掉 `--edit-mode dub`、`--review-narration` 等已移除参数。完整说明见仓库 [README](https://github.com/zenstory-ai/oh-story-dsh#升级到新版本后要做什么) 与 [CHANGELOG](https://github.com/winterhuan/oh-story-dsh/blob/main/CHANGELOG.md)。
 
 ---
 

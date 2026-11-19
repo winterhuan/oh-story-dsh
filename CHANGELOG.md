@@ -1,6 +1,6 @@
 # Changelog
 
-本文件记录 `@oh-story/dsh` 的用户可见变更。
+本文件记录 `@winterhuan/oh-story-dsh` 的用户可见变更，保留上游版本历史。
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
@@ -10,6 +10,20 @@
 同步上游时写清上游版本号与提交，便于定位。
 
 ## [Unreleased]
+
+## [0.1.28] - 2026-11-19
+
+### Changed
+
+- 首次以 `@winterhuan/oh-story-dsh` 发布此 fork，保留小说、短剧、互动游戏和视频解说工作台；安装包、插件配置和客户端模块统一使用新包名。上游为 `zenstory-ai/oh-story-dsh` 0.1.27，四套固定知识资产保持原版本与逐文件校验。
+
+### Added
+
+- 浏览器任务直接使用官方 `ego-browser` Skill 和版本匹配的指南；不提供额外会话脚本。
+
+### Removed
+
+- 停止注册和打包 `browser-cdp` 及旧站点采集说明，插件提供的小说技能由 14 个减为 13 个；研究员、路由和扫榜直接调用官方 `ego-browser`。
 
 ## [0.1.27] - 2026-11-17
 

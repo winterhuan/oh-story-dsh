@@ -1,6 +1,6 @@
 # AGENTS.md
 
-oh-story-dsh 是 DeepSeek Harness（DSH）的社区插件，发布一个包 `@oh-story/dsh`（`packages/dsh-plugin`），给 DSH Web 加小说、短剧、游戏、视频解说四个创作工作台。Agent、会话、模型与权限归 DSH，插件只加 Skills、Roles、项目文件协议和界面；归属边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。环境、测试分层与 CI 见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+oh-story-dsh 是 DeepSeek Harness（DSH）的社区插件，发布一个包 `@winterhuan/oh-story-dsh`（`packages/dsh-plugin`），给 DSH Web 加小说、短剧、游戏、视频解说四个创作工作台。Agent、会话、模型与权限归 DSH，插件只加 Skills、Roles、项目文件协议和界面；归属边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。环境、测试分层与 CI 见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 ## 固定上游资产
 

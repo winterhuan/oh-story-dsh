@@ -598,8 +598,8 @@ async function main(): Promise<void> {
       const source = await readFile(path, "utf8");
       await writeFile(path, source.replaceAll("EP001", "EP002").replaceAll("四个号，四个粉", "百万倒计时"));
     }));
-    runPnpm(["--filter", "@oh-story/dsh", "build"]);
-    runPnpm(["--filter", "@oh-story/dsh", "pack", "--pack-destination", packDirectory]);
+    runPnpm(["--filter", "@winterhuan/oh-story-dsh", "build"]);
+    runPnpm(["--filter", "@winterhuan/oh-story-dsh", "pack", "--pack-destination", packDirectory]);
     await mkdir(installation, { recursive: true });
     await writeFile(join(installation, "package.json"), `${JSON.stringify({ private: true, dependencies: { "@deepseek-ai/dsh": dshVersion } }, null, 2)}\n`);
     await writeFile(join(installation, "pnpm-workspace.yaml"), [
@@ -643,6 +643,7 @@ async function main(): Promise<void> {
       // legitimately carries a src/ tree — short-drama-edit ships the optional Remotion
       // subtitle overlay that way.
       if (/^package\/(?:src|tests)\//u.test(entry)
+        || /(?:^|\/)browser-cdp(?:\/|$)/u.test(entry)
         || /(?:^|\/)__pycache__(?:\/|$)/u.test(entry)
         || /\.pyc$/u.test(entry)
         || /(?:^|\/)\.DS_Store$/u.test(entry)
@@ -734,7 +735,8 @@ async function main(): Promise<void> {
     const dramaSession = await rpc<{ readonly sessionId: string }>(origin, "session/create", { request: { workspaceId: dramaWorkspace.workspace.workspaceId } });
     const plainSession = await rpc<{ readonly sessionId: string }>(origin, "session/create", { request: { workspaceId: plainWorkspace.workspace.workspaceId } });
     const catalog = await rpc<{ readonly skills: readonly { readonly name: string; readonly path?: string }[] }>(origin, "skills/list", { request: { sessionId: storySession.sessionId } });
-    const ohStorySkills = catalog.skills.filter((skill) => skill.name === "story" || skill.name.startsWith("story-") || skill.name === "browser-cdp");
+    const ohStorySkills = catalog.skills.filter((skill) => skill.name === "story" || skill.name.startsWith("story-"));
+    if (catalog.skills.some((skill) => skill.name === "browser-cdp")) throw new Error("The obsolete browser-cdp Skill is still registered.");
     const dramaSkills = catalog.skills.filter((skill) => skill.name === "short-drama" || skill.name.startsWith("short-drama-"));
     const gameSkills = catalog.skills.filter((skill) => [
       "novel-to-game", "novel-game-analyze", "game-design", "game-build", "game-qa"
@@ -742,7 +744,7 @@ async function main(): Promise<void> {
     const videoSkills = catalog.skills.filter((skill) => [
       "video-recap", "video-reference"
     ].includes(skill.name));
-    if (ohStorySkills.length !== 14) throw new Error(`Expected 14 Oh Story Skills, found ${String(ohStorySkills.length)}.`);
+    if (ohStorySkills.length !== 13) throw new Error(`Expected 13 Oh Story Skills, found ${String(ohStorySkills.length)}.`);
     if (dramaSkills.length !== 12) throw new Error(`Expected 12 Drama Skills, found ${String(dramaSkills.length)}.`);
     if (gameSkills.length !== 5) throw new Error(`Expected 5 NovelToGame Skills, found ${String(gameSkills.length)}.`);
     if (JSON.stringify(videoSkills.map((skill) => skill.name).sort()) !== JSON.stringify(["video-recap", "video-reference"])) {
@@ -750,7 +752,7 @@ async function main(): Promise<void> {
     }
     // Names alone cannot tell the plugin's bridged Skills from same-named copies found elsewhere.
     const foreignSkills = [...ohStorySkills, ...dramaSkills, ...gameSkills, ...videoSkills]
-      .filter((skill) => !(skill.path ?? "").replaceAll("\\", "/").includes("/@oh-story/dsh/lib/"));
+      .filter((skill) => !(skill.path ?? "").replaceAll("\\", "/").includes("/@winterhuan/oh-story-dsh/lib/"));
     if (foreignSkills.length > 0) {
       throw new Error(`Skills did not come from the installed plugin: ${JSON.stringify(foreignSkills.map((skill) => ({ name: skill.name, path: skill.path })))}`);
     }
@@ -813,22 +815,22 @@ async function main(): Promise<void> {
       await selectSession(firstRunPage, storyWorkspace.workspace.title, storySessionTitle);
       await firstRunPage.getByRole("tablist", { name: "创作工作台" }).waitFor({ state: "visible", timeout: 20_000 });
 
-      // Re-enabling from Sidebar -> Plugins -> @oh-story/dsh updates the profile patch and restores blank-Session guidance.
+      // Re-enabling from Sidebar -> Plugins -> @winterhuan/oh-story-dsh updates the profile patch and restores blank-Session guidance.
       const openSidebar = firstRunPage.getByRole("button", { name: /^(?:Open sidebar|打开侧边栏)$/u }).first();
       if (await openSidebar.isVisible()) await openSidebar.click();
       await firstRunPage.getByRole("button", { name: /^(?:Plugins|插件)$/u }).first().click();
-      const pluginCardButton = firstRunPage.locator('[data-plugin-package="@oh-story/dsh"] button').first();
+      const pluginCardButton = firstRunPage.locator('[data-plugin-package="@winterhuan/oh-story-dsh"] button').first();
       await pluginCardButton.waitFor({ state: "visible", timeout: 20_000 });
       await pluginCardButton.click();
-      const welcomeSwitch = firstRunPage.locator('[data-plugin-detail="@oh-story/dsh"] [data-plugin-config]')
+      const welcomeSwitch = firstRunPage.locator('[data-plugin-detail="@winterhuan/oh-story-dsh"] [data-plugin-config]')
         .getByRole("switch", { name: "空白会话欢迎引导" });
       await welcomeSwitch.waitFor({ state: "visible", timeout: 10_000 });
       if (await welcomeSwitch.getAttribute("aria-checked") !== "false") {
-        throw new Error("Expected @oh-story/dsh plugin config switch to reflect welcomeGuide: false.");
+        throw new Error("Expected @winterhuan/oh-story-dsh plugin config switch to reflect welcomeGuide: false.");
       }
       await welcomeSwitch.click();
       await firstRunPage.waitForFunction(
-        () => document.querySelector('[data-plugin-detail="@oh-story/dsh"] [data-plugin-config] [role="switch"]:not([disabled])[aria-checked="true"]') !== null,
+        () => document.querySelector('[data-plugin-detail="@winterhuan/oh-story-dsh"] [data-plugin-config] [role="switch"]:not([disabled])[aria-checked="true"]') !== null,
         undefined,
         { timeout: 10_000 }
       );
@@ -1140,7 +1142,7 @@ async function main(): Promise<void> {
     const index = await (await dshFetch(origin)).text();
     const preloadPath = [...index.matchAll(/\/?plugins\/\?\?[^"'\s]+/gu)]
       .map((match) => match[0].replaceAll("&amp;", "&"))
-      .find((path) => path.includes("@oh-story/dsh/client.js"));
+      .find((path) => path.includes("@winterhuan/oh-story-dsh/client.js"));
     if (preloadPath === undefined) throw new Error("DSH did not publish the Oh Story Browser module.");
     const bundle = await (await dshFetch(new URL(preloadPath, `${origin}/`))).text();
     // Registrations appear both minified and pretty-printed in the combined bundle, so the
@@ -1149,7 +1151,7 @@ async function main(): Promise<void> {
     // DSH 0.2.2-rc.2 writes its own module ids as template literals (`id:\`...\``).
     const registration = /window\.__ModuleLoader__\.load\(\{\s*id:\s*(?<quote>["`])(?<id>[^"`]+)\k<quote>/gu;
     const registrations = [...bundle.matchAll(registration)];
-    const startIndex = registrations.findIndex((match) => match.groups?.id === "@oh-story/dsh");
+    const startIndex = registrations.findIndex((match) => match.groups?.id === "@winterhuan/oh-story-dsh");
     if (startIndex < 0) throw new Error("DSH did not serve the Oh Story Browser module.");
     const start = registrations[startIndex]!.index;
     const client = bundle.slice(start, registrations[startIndex + 1]?.index);
