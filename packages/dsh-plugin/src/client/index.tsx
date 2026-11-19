@@ -2202,7 +2202,7 @@ export function apply(context: ClientContext): void {
   });
   context.slots.inject("plugins.bundle.config", () => context.slots.register({
     name: "plugins.bundle.config",
-    key: "@oh-story/dsh"
+    key: "@winterhuan/oh-story-dsh"
   }, ({ view }) => <OhStoryPluginConfig view={view} controller={controller} styles={styles} />));
   context.slots.inject("shell.overlay", () => {
     const disposeSeat = context.slots.register({

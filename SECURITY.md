@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes land on the latest published `@oh-story/dsh` release. Report issues against `main`.
+Security fixes land on the latest published `@winterhuan/oh-story-dsh` release. Report issues against `main`.
 
 ## Reporting a vulnerability
 
@@ -16,7 +16,7 @@ Vulnerabilities in DeepSeek Harness itself belong to the
 
 ## Trust boundary
 
-`@oh-story/dsh` is a Cordis plugin inside a DSH process. DSH owns models, credentials, sandbox policy, tool permissions and approvals. The plugin opens no network listener of its own and starts no second agent runtime. Host preflight checks whether media credentials are set; it returns configuration status, not key values. Media adapters run through the current DSH execution environment.
+`@winterhuan/oh-story-dsh` is a Cordis plugin inside a DSH process. DSH owns models, credentials, sandbox policy, tool permissions and approvals. The plugin opens no network listener of its own and starts no second agent runtime. Host preflight checks whether media credentials are set; it returns configuration status, not key values. Media adapters run through the current DSH execution environment.
 
 The plugin mounts `/oh-story` routes on DSH's existing web server for creative files, read-only media and game previews, and runtime preflight:
 
@@ -31,3 +31,8 @@ Oh Story's login/CDP rank scrapers and Drama Skills' standalone dashboard server
 during synchronization, and the build fails if either reappears in the release bundle. The two
 scan Skills ship DSH-native instructions that use only visible tools and do not bypass
 captchas, paywalls, or access controls.
+
+Browser tasks use the official `ego-browser` Skill directly. Agents run
+`ego-browser skill` and follow the installed runtime's guide. The plugin ships
+no `browser-cdp` entry, browser transport, launcher, session store or recovery code.
+DSH tool permissions still apply. Site collectors and publishing automation remain excluded.

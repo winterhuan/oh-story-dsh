@@ -13,7 +13,7 @@ const stableTag = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const shaPattern = /^[a-f0-9]{40}$/;
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const githubActionsAppId = 15368;
-const canonicalRepository = "zenstory-ai/oh-story-dsh";
+const canonicalRepository = "winterhuan/oh-story-dsh";
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -186,7 +186,7 @@ export async function createReleaseManifest({ tarball, sourceSha, version }) {
   const file = await digestFile(tarball);
   return {
     schemaVersion: 1,
-    package: "@oh-story/dsh",
+    package: "@winterhuan/oh-story-dsh",
     version,
     tag: `v${version}`,
     sourceSha,
@@ -202,10 +202,10 @@ export async function verifyReleaseManifest({ manifest, directory, expectedSourc
   invariant(manifest?.schemaVersion === 1, "unsupported release manifest schema");
   invariant(manifest.sourceSha === expectedSourceSha, "release manifest source SHA mismatch");
   invariant(manifest.tag === `v${manifest.version}`, "release manifest tag/version mismatch");
-  invariant(manifest.package === "@oh-story/dsh", "release manifest package mismatch");
+  invariant(manifest.package === "@winterhuan/oh-story-dsh", "release manifest package mismatch");
   invariant(Array.isArray(manifest.files) && manifest.files.length === 1, "release manifest must contain one tarball");
   const entry = manifest.files[0];
-  invariant(entry.name === `oh-story-dsh-${manifest.version}.tgz`, `unexpected tarball name: ${entry.name}`);
+  invariant(entry.name === `winterhuan-oh-story-dsh-${manifest.version}.tgz`, `unexpected tarball name: ${entry.name}`);
   invariant(path.basename(entry.name) === entry.name, "manifest file name must not contain a path");
   const actual = await digestFile(path.join(directory, entry.name));
   invariant(actual.sha256 === entry.sha256, `SHA-256 mismatch for ${entry.name}`);
@@ -647,6 +647,8 @@ async function retry(label, operation, { attempts = 12, delayMs = 10_000 } = {})
 }
 
 async function commandVerifyPublic(args) {
+  invariant(args.npm === undefined || args.npm === "true" || args.npm === "false", "--npm must be true or false");
+  const verifyNpm = args.npm !== "false";
   const manifest = await loadJson(args.manifest);
   await verifyReleaseManifest({ manifest, directory: args.directory, expectedSourceSha: args.sha });
   const tarball = manifest.files[0];
@@ -663,24 +665,29 @@ async function commandVerifyPublic(args) {
     invariant(sha256Bytes(releaseBytes) === expectedSha256, `anonymous GitHub release bytes differ for ${name}`);
   }
 
-  const metadata = await retry("npm registry propagation", async () => {
-    const result = await registryMetadata(manifest.package, manifest.version);
-    return requirePublishedNpmMetadata({ ...result, integrity: tarball.integrity });
-  });
-  invariant(metadata.dist.integrity === tarball.integrity, "npm integrity differs from the manifest");
+  if (verifyNpm) {
+    const metadata = await retry("npm registry propagation", async () => {
+      const result = await registryMetadata(manifest.package, manifest.version);
+      return requirePublishedNpmMetadata({ ...result, integrity: tarball.integrity });
+    });
+    invariant(metadata.dist.integrity === tarball.integrity, "npm integrity differs from the manifest");
+  }
 
   const temp = await mkdtemp(path.join(os.tmpdir(), "oh-story-dsh-public-"));
   const npmConfig = path.join(temp, "anonymous.npmrc");
   await writeFile(npmConfig, "registry=https://registry.npmjs.org/\nalways-auth=false\n");
   await writeFile(path.join(temp, "package.json"), '{"private":true}\n');
+  const installSpec = verifyNpm
+    ? `${manifest.package}@${manifest.version}`
+    : `https://github.com/${args.repository}/releases/download/${encodeURIComponent(manifest.tag)}/${encodeURIComponent(tarball.name)}`;
   await run(
     "npm",
-    ["install", "--ignore-scripts", "--legacy-peer-deps", "--no-audit", "--no-fund", "--package-lock=false", `${manifest.package}@${manifest.version}`],
+    ["install", "--ignore-scripts", "--legacy-peer-deps", "--no-audit", "--no-fund", "--package-lock=false", installSpec],
     { cwd: temp, env: { ...process.env, NODE_AUTH_TOKEN: "", NPM_CONFIG_USERCONFIG: npmConfig } },
   );
-  const installed = JSON.parse(await readFile(path.join(temp, "node_modules", "@oh-story", "dsh", "package.json"), "utf8"));
+  const installed = JSON.parse(await readFile(path.join(temp, "node_modules", "@winterhuan", "oh-story-dsh", "package.json"), "utf8"));
   invariant(installed.version === manifest.version, `anonymous install resolved ${installed.version}`);
-  process.stdout.write(`${JSON.stringify({ github: "SUCCESS", npm: "SUCCESS", version: manifest.version })}\n`);
+  process.stdout.write(`${JSON.stringify({ github: "SUCCESS", npm: verifyNpm ? "SUCCESS" : "DISABLED", version: manifest.version })}\n`);
 }
 
 async function main() {

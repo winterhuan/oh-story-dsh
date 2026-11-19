@@ -1,3 +1,5 @@
+> This fork publishes `@winterhuan/oh-story-dsh`. Install the prebuilt GitHub Release below, or build it from the repository root with `pnpm install --frozen-lockfile` and `pnpm pack:release`. Original upstream: [zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh).
+
 <!-- Last synced with README.md: 2026-11-19 -->
 
 <p align="center">
@@ -24,7 +26,7 @@
 
 <p align="center">
   <a href="https://github.com/zenstory-ai/oh-story-dsh/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/zenstory-ai/oh-story-dsh?style=flat-square&color=22D3EE&logo=github&logoColor=white&label=Stars"></a>
-  <a href="https://github.com/zenstory-ai/oh-story-dsh/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/zenstory-ai/oh-story-dsh?style=flat-square&color=081431&label=Release"></a>
+  <a href="https://github.com/winterhuan/oh-story-dsh/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/winterhuan/oh-story-dsh?style=flat-square&color=081431&label=Release"></a>
   <img alt="Workbenches 4" src="https://img.shields.io/badge/Workbenches-4-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
@@ -35,35 +37,25 @@
 
 | Workbench | Bundled skill suite (pinned per release) | Main entry points |
 | --- | --- | --- |
-| **Novel** | [Oh Story 0.10.5](https://github.com/zenstory-ai/oh-story-claudecode/releases/tag/v0.10.5) · 14 Skills · 7 Roles | `/story`, `/story-long-write`, `/story-review`, `/story-publish` |
+| **Novel** | [Oh Story 0.10.5](https://github.com/zenstory-ai/oh-story-claudecode/releases/tag/v0.10.5) · 13 Skills · 7 Roles | `/story`, `/story-long-write`, `/story-review`, `/story-publish` |
 | **Short drama** | [Drama Skills 0.12.1](https://github.com/zenstory-ai/drama-skills/releases/tag/v0.12.1) · 12 Skills | `/short-drama`, `/short-drama-write`, `/short-drama-storyboard`, `/short-drama-edit` |
 | **Interactive game** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`, `/game-build`, `/game-qa` |
 | **Video recap** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`, `/video-reference` |
 
-> Latest release: **v0.1.27**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), [Releases](https://github.com/zenstory-ai/oh-story-dsh/releases), and [Upgrading](#what-do-i-do-after-upgrading) for release and migration notes.
+> Latest release: **v0.1.28**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), [Releases](https://github.com/winterhuan/oh-story-dsh/releases), and [Upgrading](#what-do-i-do-after-upgrading) for release and migration notes.
 
 ## Installation
 
 Paired by default with DSH `0.2.2-rc.1` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add @oh-story/dsh@0.1.27 &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
 Keep the terminal open; if the browser does not launch automatically, open the full `http://127.0.0.1:3080/?token=...` URL printed in the terminal (first-time login uses the `token` query parameter). Add a provider and API key under **Settings → Models** or export `DEEPSEEK_API_KEY` before launching; to browse local projects without an API key, click **Configure later** in the first-run guide.
 
 Use the **same DSH version** for both `plugin add` and `web` (`>=0.2.0-rc.2 <0.2.1-0`, `>=0.2.1-alpha.1 <0.2.2-0`, and `>=0.2.2-alpha.2 <0.2.3-0` are supported; update both commands together if you run `0.2.1-rc.5`, `0.2.0-rc.2`, or `0.2.2-rc.3`).
-
-<details>
-<summary>Install the prebuilt tarball from GitHub Releases</summary>
-
-```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add https://github.com/zenstory-ai/oh-story-dsh/releases/download/v0.1.27/oh-story-dsh-0.1.27.tgz &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
-```
-
-</details>
 
 <details>
 <summary>Configure short-drama media APIs (images / video / speech / music)</summary>
@@ -101,7 +93,7 @@ The video pipeline requires **Python 3.10+** and **ffmpeg / ffprobe** on `PATH` 
 Bundled Skills load in any session preset that enables the skill tool (`Standard` or `PTC`; `Minimal` skips skills). To leave your default `web` profile untouched, install into a separate `story` profile:
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add @oh-story/dsh@0.1.27
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz"
 ```
 
 Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the plugin:
@@ -110,7 +102,7 @@ Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the 
 "bundles": [
   "@deepseek-ai/dsh-base",
   "@deepseek-ai/dsh-web-app",
-  "@oh-story/dsh"
+  "@winterhuan/oh-story-dsh"
 ]
 ```
 
@@ -166,7 +158,7 @@ Built around `video-recaps/<project>/` with **Preview / Creative canvas / Docume
 Click **Add workspace** beside **Workspaces** in the left sidebar, choose your project folder, and start a session:
 
 - **Existing creative folder**: the `小说 / 短剧 / 游戏 / 视频` tabs open automatically regardless of session preset.
-- **Empty folder**: pick a skill-enabled preset (`Standard` or `PTC`) and send `/story`, `/short-drama`, `/novel-to-game quick`, or `/video-recap` in Chat; the workbench opens as soon as the first project file is written. Dismiss the welcome card inline or toggle it under **Plugins → `@oh-story/dsh`** (`welcomeGuide: false` in `cordis.patch.yml`).
+- **Empty folder**: pick a skill-enabled preset (`Standard` or `PTC`) and send `/story`, `/short-drama`, `/novel-to-game quick`, or `/video-recap` in Chat; the workbench opens as soon as the first project file is written. Dismiss the welcome card inline or toggle it under **Plugins → `@winterhuan/oh-story-dsh`** (`welcomeGuide: false` in `cordis.patch.yml`).
 
 Copy and adapt any starter prompt below:
 
@@ -271,7 +263,7 @@ Yes — CI runs type, asset, unit, and build checks across macOS, Windows, and L
 
 ### What do I do after upgrading?
 
-Rerun the `plugin add` command under [Installation](#installation) with the latest `@oh-story/dsh@` version and restart DSH; bundled Skills and Roles update automatically. Migration notes for projects created with older versions are documented in [CHANGELOG.md](CHANGELOG.md).
+Rerun the `plugin add` command under [Installation](#installation) with the latest Release version and tarball filename and restart DSH; bundled Skills and Roles update automatically. Migration notes for projects created with older versions are documented in [CHANGELOG.md](CHANGELOG.md).
 
 ## Acknowledgments
 

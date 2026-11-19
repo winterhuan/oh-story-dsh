@@ -1,7 +1,9 @@
 # Release process
 
-`@oh-story/dsh` is distributed as the same prebuilt tarball through npm and
-GitHub Releases. A release is created only from a `v<package-version>` tag.
+`@winterhuan/oh-story-dsh` is distributed as a prebuilt tarball through GitHub
+Releases. npm is an optional channel, enabled by the repository variable
+`PUBLISH_NPM=true` after its credentials are configured. A release is created
+only from a `v<package-version>` tag.
 
 ## Upstream update issues
 
@@ -14,14 +16,15 @@ Run `pnpm upstream:updates` for a local dry run.
 
 ## One-time npm setup
 
-The npm account used for the first publication must be allowed to publish the
-public `@oh-story/dsh` package. Store a granular publish token as the repository
+Leave `PUBLISH_NPM` unset for GitHub-only releases. To enable npm, the account
+used for the first publication must be allowed to publish the
+public `@winterhuan/oh-story-dsh` package. Store a granular publish token as the repository
 secret `NPM_TOKEN`; never commit it or put it in an issue, workflow file, or
-release note.
+release note. Then set the repository variable `PUBLISH_NPM=true`.
 
 After the first publication, configure npm Trusted Publishing for:
 
-- repository: `zenstory-ai/oh-story-dsh`
+- repository: `winterhuan/oh-story-dsh`
 - workflow: `release.yml`
 
 The workflow requests an OpenID Connect identity and publishes with provenance.
@@ -48,7 +51,7 @@ The release workflow then:
 2. builds and inspects a clean installable tarball;
 3. checks that the tag and package version match;
 4. uploads the tarball and SHA-256 checksum to a GitHub Release;
-5. publishes the identical tarball to npm with provenance.
+5. when `PUBLISH_NPM=true`, publishes the identical tarball to npm with provenance.
 
 The deterministic public manifest records the source commit, tool versions,
 tarball size, SHA-256, and npm-compatible SHA-512 integrity. Separate CI and
@@ -76,10 +79,11 @@ proves source ancestry, and rechecks the exact CI workflow. It refetches the
 selected run after reading its latest-attempt jobs and rejects an attempt,
 check-suite, source, status, conclusion, or GitHub Actions application change.
 
-After both publishers finish, the workflow anonymously downloads the GitHub
-tarball, waits a bounded time for npm registry propagation, compares
-`dist.integrity`, and installs the exact public npm version with lifecycle
-scripts disabled. A timeout or channel mismatch leaves the workflow red.
+After publication, the workflow anonymously downloads and checks the GitHub
+assets and installs the public tarball with lifecycle scripts disabled. When
+npm is enabled, it also waits a bounded time for registry propagation, compares
+`dist.integrity`, and installs the exact public npm version instead. A timeout
+or enabled-channel mismatch leaves the workflow red.
 
 ## Dry-run and failure outcomes
 
@@ -103,12 +107,14 @@ failure and needs investigation rather than a retry that mutates public bytes.
 
 ## Verify the public installation
 
-Do not announce a release until the registry reports the exact version:
+For GitHub-only releases, use the public tarball installation below. When npm
+is enabled, do not announce npm availability until the registry reports the
+exact version:
 
 ```bash
-VERSION=0.1.27
-npm view "@oh-story/dsh@$VERSION" version dist.integrity
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "@oh-story/dsh@$VERSION"
+VERSION=0.1.28
+npm view "@winterhuan/oh-story-dsh@$VERSION" version dist.integrity
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "@winterhuan/oh-story-dsh@$VERSION"
 ```
 
 The default public smoke pins DSH `0.2.2-rc.1`. After it passes,
@@ -119,5 +125,19 @@ describe a host line as supported before its Chrome run passes.
 The GitHub Release tarball remains a registry-independent installation path:
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/zenstory-ai/oh-story-dsh/releases/download/v$VERSION/oh-story-dsh-$VERSION.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v$VERSION/winterhuan-oh-story-dsh-$VERSION.tgz"
 ```
+
+## Plugin market Git package
+
+The DSH market accepts npm or fixed Git commits. For GitHub-only releases,
+create the installable `dsh-release` branch from the verified public tarball,
+with the package at its root. Keep every runtime file byte-identical; remove
+source-only `scripts`, `devDependencies` and `repository.directory` from the
+package manifest so a Git install needs no build toolchain. Include the public
+`RELEASE-MANIFEST.json` to identify the source commit and original tarball.
+
+Commit the package, push the append-only `dsh-v<version>` tag, and test a remote
+Git install in an isolated DSH home before adding that exact Git commit to the
+plugin market. The source `v<version>` tag remains at the CI-verified main
+commit; neither tag moves after publication.

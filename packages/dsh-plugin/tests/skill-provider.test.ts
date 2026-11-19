@@ -10,12 +10,28 @@ const gameRoot = resolve(import.meta.dirname, "../../knowledge/novel-to-game/ski
 const videoRoot = resolve(import.meta.dirname, "../../knowledge/video-recap/skills");
 
 describe("Oh Story bundled skill provider", () => {
+  it("omits the obsolete browser entry and routes browser tasks to official Ego", async () => {
+    const provider = createOhStorySkillProvider(skillRoot);
+    const listed = await provider.list({});
+    if (!Array.isArray(listed)) throw new Error("Expected the bundled catalog.");
+    expect(listed).toHaveLength(13);
+    expect(listed.map(skill => skill.name)).not.toContain("browser-cdp");
+    const source = parseBundledSkill(await readFile(resolve(skillRoot, "browser-cdp/SKILL.md"), "utf8"));
+    const candidate = { ...listed[0]!, name: source.name, path: resolve(skillRoot, "browser-cdp/SKILL.md") };
+    expect(await provider.get(candidate, {})).toBeUndefined();
+    for (const name of ["story", "story-long-scan", "story-short-scan"]) {
+      const skill = await provider.get(listed.find(candidate => candidate.name === name)!, {});
+      expect(skill?.content).toContain("ego-browser skill");
+      expect(skill?.content).not.toContain("browser-cdp");
+    }
+  });
+
   it("publishes the complete upstream capability catalog with a DSH bridge", async () => {
     const provider = createOhStorySkillProvider(skillRoot);
     const listed = await provider.list({});
     if (!Array.isArray(listed)) throw new Error("Expected a complete bundled catalog.");
     const candidates = listed;
-    expect(candidates).toHaveLength(14);
+    expect(candidates).toHaveLength(13);
     expect(candidates.map((candidate) => candidate.name)).toContain("story-long-write");
     expect(candidates.every((candidate) => candidate.source === "bundled" && candidate.invocation.modelInvocable)).toBe(true);
     const selected = candidates.find((candidate) => candidate.name === "story-long-write");
@@ -101,9 +117,6 @@ describe("Oh Story bundled skill provider", () => {
     expect(cover?.content).toContain("offer the upstream prompt-only mode instead of a paid API");
     expect(route?.content).not.toContain("还没部署过");
     expect(route?.content).not.toContain("dashboard-server.mjs");
-    const browserCandidate = candidates.find((candidate) => candidate.name === "browser-cdp");
-    const browser = await provider.get(browserCandidate!, {});
-    expect(browser?.content).not.toContain("setup-cdp-chrome.js 9222");
     for (const name of ["story-long-scan", "story-short-scan"]) {
       const candidate = candidates.find((value) => value.name === name);
       const scan = await provider.get(candidate!, {});

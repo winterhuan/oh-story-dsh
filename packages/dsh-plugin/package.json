@@ -1,6 +1,6 @@
 {
-  "name": "@oh-story/dsh",
-  "version": "0.1.27",
+  "name": "@winterhuan/oh-story-dsh",
+  "version": "0.1.28",
   "description": "A DSH plugin for fiction, short-drama, interactive-game, and video-recap production",
   "keywords": [
     "deepseek-harness",
@@ -19,11 +19,11 @@
     "video-production",
     "ai-agents"
   ],
-  "homepage": "https://github.com/zenstory-ai/oh-story-dsh#readme",
-  "bugs": "https://github.com/zenstory-ai/oh-story-dsh/issues",
+  "homepage": "https://github.com/winterhuan/oh-story-dsh#readme",
+  "bugs": "https://github.com/winterhuan/oh-story-dsh/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zenstory-ai/oh-story-dsh.git",
+    "url": "git+https://github.com/winterhuan/oh-story-dsh.git",
     "directory": "packages/dsh-plugin"
   },
   "publishConfig": {

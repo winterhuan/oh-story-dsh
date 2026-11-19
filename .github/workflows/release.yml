@@ -78,7 +78,7 @@ jobs:
         run: |
           version="$(node -p "require('./packages/dsh-plugin/package.json').version")"
           node scripts/release.mjs manifest \
-            --tarball "release/oh-story-dsh-$version.tgz" \
+            --tarball "release/winterhuan-oh-story-dsh-$version.tgz" \
             --sha "$GITHUB_SHA" \
             --version "$version" \
             --run-id "$GITHUB_RUN_ID" \
@@ -131,7 +131,7 @@ jobs:
   npm:
     name: Publish npm package
     needs: verify
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && vars.PUBLISH_NPM == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -183,7 +183,10 @@ jobs:
   verify-public:
     name: Verify public channels
     needs: [verify, github-release, npm]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      always() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') &&
+      needs.verify.result == 'success' && needs.github-release.result == 'success' &&
+      (needs.npm.result == 'success' || needs.npm.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -202,7 +205,8 @@ jobs:
           path: release
       - name: Revalidate producer-bound promotion records
         run: node scripts/release.mjs verify-manifest --manifest release/RELEASE-MANIFEST.json --promotion-proof release/PROMOTION-PROOF.json --ci-proof release/ci-proof.json --manifest-sha256 "${{ needs.verify.outputs.manifest-sha256 }}" --promotion-proof-sha256 "${{ needs.verify.outputs.promotion-proof-sha256 }}" --ci-proof-sha256 "${{ needs.verify.outputs.ci-proof-sha256 }}" --directory release --sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" --artifact-name "$ARTIFACT_NAME"
-      - name: Verify anonymous bytes, npm integrity, and isolated install
+      - name: Verify anonymous bytes and isolated public install
         env:
           NODE_AUTH_TOKEN: ""
-        run: node scripts/release.mjs verify-public --manifest release/RELEASE-MANIFEST.json --directory release --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY"
+          VERIFY_NPM: ${{ vars.PUBLISH_NPM == 'true' && 'true' || 'false' }}
+        run: node scripts/release.mjs verify-public --manifest release/RELEASE-MANIFEST.json --directory release --sha "$GITHUB_SHA" --repository "$GITHUB_REPOSITORY" --npm "$VERIFY_NPM"

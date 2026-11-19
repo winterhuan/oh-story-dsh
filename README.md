@@ -1,3 +1,5 @@
+> 此 fork 的包名为 `@winterhuan/oh-story-dsh`。下方示例安装 GitHub Release 预构建包；源码构建可在仓库根目录运行 `pnpm install --frozen-lockfile` 和 `pnpm pack:release`。原项目：[zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh)。
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/zenstory-ai/zenstory/main/apps/web/public/brand/zenstory-ai-mark.svg" alt="ZenStory AI" width="76" height="76">
 </p>
@@ -22,7 +24,7 @@
 
 <p align="center">
   <a href="https://github.com/zenstory-ai/oh-story-dsh/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/zenstory-ai/oh-story-dsh?style=flat-square&color=22D3EE&logo=github&logoColor=white&label=Stars"></a>
-  <a href="https://github.com/zenstory-ai/oh-story-dsh/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/zenstory-ai/oh-story-dsh?style=flat-square&color=081431&label=Release"></a>
+  <a href="https://github.com/winterhuan/oh-story-dsh/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/winterhuan/oh-story-dsh?style=flat-square&color=081431&label=Release"></a>
   <img alt="Workbenches 4" src="https://img.shields.io/badge/Workbenches-4-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
@@ -33,35 +35,25 @@
 
 | 工作台 | 内置技能包（随插件固定版本打包） | 常用入口 |
 | --- | --- | --- |
-| **小说** | [Oh Story 0.10.5](https://github.com/zenstory-ai/oh-story-claudecode/releases/tag/v0.10.5) · 14 Skills · 7 Roles | `/story`、`/story-long-write`、`/story-review`、`/story-publish` |
+| **小说** | [Oh Story 0.10.5](https://github.com/zenstory-ai/oh-story-claudecode/releases/tag/v0.10.5) · 13 Skills · 7 Roles | `/story`、`/story-long-write`、`/story-review`、`/story-publish` |
 | **短剧** | [Drama Skills 0.12.1](https://github.com/zenstory-ai/drama-skills/releases/tag/v0.12.1) · 12 Skills | `/short-drama`、`/short-drama-write`、`/short-drama-storyboard`、`/short-drama-edit` |
 | **互动游戏** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`、`/game-build`、`/game-qa` |
 | **视频解说** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`、`/video-reference` |
 
-> 当前版本 **v0.1.27**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[Releases](https://github.com/zenstory-ai/oh-story-dsh/releases) 与[升级问答](#升级到新版本后要做什么)。
+> 当前版本 **v0.1.28**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[Releases](https://github.com/winterhuan/oh-story-dsh/releases) 与[升级问答](#升级到新版本后要做什么)。
 
 ## 安装
 
 默认配套 DSH `0.2.2-rc.1`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add @oh-story/dsh@0.1.27 &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
 保持终端开启；浏览器若未自动弹出，复制终端打印的完整 `http://127.0.0.1:3080/?token=...` 链接打开（首次登录靠链接里的 `token` 认证）。进入后在「设置 → 模型」填入 Provider 与 API Key，或在启动前设置环境变量 `DEEPSEEK_API_KEY`；只看本地已有工程可在首次引导点「稍后配置 / Configure later」。
 
 安装和启动请保持同一个 DSH 版本（支持 `>=0.2.0-rc.2 <0.2.1-0`、`>=0.2.1-alpha.1 <0.2.2-0` 与 `>=0.2.2-alpha.2 <0.2.3-0`；改用 `0.2.1-rc.5`、`0.2.0-rc.2` 或 `0.2.2-rc.3` 时把两条命令里的版本号一起替换）。
-
-<details>
-<summary>从 GitHub Release 安装预构建包</summary>
-
-```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add https://github.com/zenstory-ai/oh-story-dsh/releases/download/v0.1.27/oh-story-dsh-0.1.27.tgz &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
-```
-
-</details>
 
 <details>
 <summary>配置短剧媒体生成 API（生图 / 生视频 / 配音 / 配乐）</summary>
@@ -99,7 +91,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 插件装进哪个 profile，该 profile 下启用技能工具的会话模式（如 `Standard`、`PTC`；`Minimal` 不加载技能）就能调用创作技能。想让默认 `web` 环境保持原样，可装进独立的 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add @oh-story/dsh@0.1.27
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz"
 ```
 
 再编辑 `~/.dsh/profiles/story/package.json`，把 Web 界面包排在插件前面：
@@ -108,7 +100,7 @@ npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --
 "bundles": [
   "@deepseek-ai/dsh-base",
   "@deepseek-ai/dsh-web-app",
-  "@oh-story/dsh"
+  "@winterhuan/oh-story-dsh"
 ]
 ```
 
@@ -164,7 +156,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081  # 创作工作�
 点击左侧 **Workspaces** 旁的 **添加工作区 / Add workspace**，选定作品目录并新建会话：
 
 - **已有工程目录**：自动识别并展示「小说 / 短剧 / 游戏 / 视频」页卡，不挑会话模式。
-- **全新空目录**：选用支持技能的会话模式（默认的 `Standard` 或 `PTC`），在对话里发 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap`，写出第一份项目文件后工作台自动展开。空白会话的入门引导可当场关闭，也可在「插件 → `@oh-story/dsh`」或 `cordis.patch.yml` 的 `welcomeGuide: false` 开关。
+- **全新空目录**：选用支持技能的会话模式（默认的 `Standard` 或 `PTC`），在对话里发 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap`，写出第一份项目文件后工作台自动展开。空白会话的入门引导可当场关闭，也可在「插件 → `@winterhuan/oh-story-dsh`」或 `cordis.patch.yml` 的 `welcomeGuide: false` 开关。
 
 可直接复制下面的开局提示词（替换方括号内容）：
 
@@ -269,7 +261,7 @@ IMG-JIANGCHEN-SHEET 在当前集内重复，后出现的条目会遮蔽前一条
 
 ### 升级到新版本后要做什么？
 
-把[安装](#安装)命令里 `@oh-story/dsh@` 后的版本号改成最新版，重新运行 `plugin add` 并重启 DSH 即可，内置 Skills 与 Roles 会随插件自动更新。旧版工程的字段与参数迁移说明见 [CHANGELOG.md](CHANGELOG.md)。
+把[安装](#安装)命令里的 Release 版本号和 tarball 文件名改成最新版，重新运行 `plugin add` 并重启 DSH 即可，内置 Skills 与 Roles 会随插件自动更新。旧版工程的字段与参数迁移说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 致谢
 
