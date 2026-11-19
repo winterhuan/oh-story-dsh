@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "package": "@winterhuan/oh-story-dsh",
+  "version": "0.1.28",
+  "tag": "v0.1.28",
+  "sourceSha": "79b0bb8902fcf16a4451a1ac9f5846dccb449011",
+  "tools": {
+    "node": "24",
+    "packageManager": "pnpm@11.7.0"
+  },
+  "files": [
+    {
+      "name": "winterhuan-oh-story-dsh-0.1.28.tgz",
+      "size": 2501918,
+      "sha256": "0b16963ac8150186c6838bce92707a19ad67baf97bee1f5bba2aad607483d742",
+      "integrity": "sha512-e8RwrKgarfWffypaMTR5NIIdGGZjcNAlmggKEQvGmxHjMIdNzg8aADxknnC1jOAygJpfvY5KZJKTRg6oG52v6w=="
+    }
+  ]
+}
