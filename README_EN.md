@@ -42,14 +42,14 @@
 | **Interactive game** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`, `/game-build`, `/game-qa` |
 | **Video recap** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`, `/video-reference` |
 
-> Latest release: **v0.1.28**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), [Releases](https://github.com/winterhuan/oh-story-dsh/releases), and [Upgrading](#what-do-i-do-after-upgrading) for release and migration notes.
+> Latest release: **v0.1.29**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), [Releases](https://github.com/winterhuan/oh-story-dsh/releases), and [Upgrading](#what-do-i-do-after-upgrading) for release and migration notes.
 
 ## Installation
 
 Paired by default with DSH `0.2.2-rc.1` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz" &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.29/winterhuan-oh-story-dsh-0.1.29.tgz" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
@@ -93,7 +93,7 @@ The video pipeline requires **Python 3.10+** and **ffmpeg / ffprobe** on `PATH` 
 Bundled Skills load in any session preset that enables the skill tool (`Standard` or `PTC`; `Minimal` skips skills). To leave your default `web` profile untouched, install into a separate `story` profile:
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.29/winterhuan-oh-story-dsh-0.1.29.tgz"
 ```
 
 Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the plugin:
@@ -151,14 +151,14 @@ Built around `video-recaps/<project>/` with **Preview / Creative canvas / Docume
 
 - **Plain files as the source of truth**: every view reads Markdown, JSON, and media files straight from your workspace with no hidden database — editing a file updates that layer of the project.
 - **Confirmation before paid calls**: short-drama media jobs show preflight checks and parameters in Chat and wait for your approval before calling external APIs.
-- **Out of the way for coding**: workbenches open only in folders with creative files, collapse to stock DSH in one click, and remember the toggle per workspace; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for boundaries.
+- **Open straight into creative work**: each profile with the plugin opens all four workbenches in an empty workspace by default. Collapse them any time; the browser remembers the choice per workspace. Turn off empty-workspace opening in profiles used for general work. See the [plugin configuration](packages/dsh-plugin/README.md#独立-profile-按需加载).
 
 ## Start creating
 
 Click **Add workspace** beside **Workspaces** in the left sidebar, choose your project folder, and start a session:
 
 - **Existing creative folder**: the `小说 / 短剧 / 游戏 / 视频` tabs open automatically regardless of session preset.
-- **Empty folder**: pick a skill-enabled preset (`Standard` or `PTC`) and send `/story`, `/short-drama`, `/novel-to-game quick`, or `/video-recap` in Chat; the workbench opens as soon as the first project file is written. Dismiss the welcome card inline or toggle it under **Plugins → `@winterhuan/oh-story-dsh`** (`welcomeGuide: false` in `cordis.patch.yml`).
+- **Empty folder**: the workbench opens right away. Pick a skill-enabled preset (`Standard` or `PTC`), then send `/story`, `/short-drama`, `/novel-to-game quick`, or `/video-recap` in the Chat column. `Minimal` does not load plugin Skills. Dismiss the welcome card inline or toggle it under **Plugins → `@winterhuan/oh-story-dsh`** (`welcomeGuide: false` in `cordis.patch.yml`).
 
 Copy and adapt any starter prompt below:
 
@@ -247,7 +247,7 @@ No — all four skill suites are standalone open-source repositories ([oh-story-
 
 ### Will installing this affect normal coding sessions in DSH?
 
-No — the workbenches stay hidden unless the workspace contains creative project files. You can collapse them anytime from the header or isolate the plugin in a separate `story` profile as shown under [Installation](#installation).
+Profiles with the plugin open the workbench in empty folders by default. You can collapse it from the header or disable `openEmptyWorkbench` in profiles used for general work.
 
 ### Does DeepSeek generate images and video itself? How is token usage billed?
 

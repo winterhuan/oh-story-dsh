@@ -34,12 +34,15 @@ interface SettingsPolicyService {
 export interface Config {
   readonly editorMaxBytes?: number;
   readonly trustedHosts?: string[];
+  /** Opens the workbench for empty workspaces; set false in general-purpose profiles. */
+  readonly openEmptyWorkbench?: boolean;
   readonly welcomeGuide?: boolean | { readonly get: () => boolean | undefined };
 }
 
 export const Config = z.object({
   editorMaxBytes: z.natural().min(65_536).max(8_388_608).default(2_097_152),
   trustedHosts: z.array(String).default([]),
+  openEmptyWorkbench: z.boolean().default(true),
   welcomeGuide: z.boolean().default(true).volatile()
 }) as unknown as z<Config>;
 
@@ -66,6 +69,7 @@ export async function apply(context: Context, config: Config = {}): Promise<void
   registerWorkspaceRoute(context, {
     maxBytes: config.editorMaxBytes ?? 2_097_152,
     trustedHosts,
+    openEmptyWorkbench: config.openEmptyWorkbench ?? true,
     welcomeGuide: () => readWelcomeGuideConfig(config.welcomeGuide)
   });
   // Register the bundled media adapters for this host up front so the first

@@ -20,7 +20,7 @@
 环境要求 **Node.js 24.9+**（安装命令已内置临时 `pnpm`，无需提前全局安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz" &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.29/winterhuan-oh-story-dsh-0.1.29.tgz" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
@@ -68,15 +68,23 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 若希望默认 `web` profile 保持纯净，可将插件装入独立 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.29/winterhuan-oh-story-dsh-0.1.29.tgz"
 ```
 
 将 `~/.dsh/profiles/story/package.json` 中的 `dsh.profile.bundles` 设为 `["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@winterhuan/oh-story-dsh"]`，随后即可用 `npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081` 独立启动创作工作台。
 
+工作台默认在空工作区也直接打开。若 profile 还用于普通工作，可以将该 profile 的 `cordis.patch.yml` 设为以下配置来保持空工作区原样，然后重启 DSH。识别到创作项目的工作区仍自动展开。
+
+```yaml
+- id: oh-story
+  config:
+    openEmptyWorkbench: false
+```
+
 ## 常见问题与升级说明
 
 - **安装报 `pnpm not found on PATH`**：执行上方带 `--package pnpm@11.7.0` 的完整安装命令。
-- **未看到工作台标签或技能未生效**：添加并打开已有作品目录即可自动展开工作台；空目录新建作品需当前会话模式支持技能加载（如 `Standard`、`PTC`，`Minimal` 模式不加载插件技能），在 Chat 中运行 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap` 生成首个创作文件；已收起的工作台可点会话区的「创作工作台」恢复。空白会话欢迎引导可点右上角「关闭欢迎引导」，或在「插件 → `@winterhuan/oh-story-dsh`」随时开关。
+- **未看到工作台标签或技能未生效**：确认工作区会话没有手动收起工作台；有创作项目的工作区自动展开，配置开启时空工作区也会展开。空目录创作仍需当前会话模式支持技能加载（如 `Standard`、`PTC`；`Minimal` 不加载插件技能），可在 Chat 里运行 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap`。右侧会话可以随时收起工作台再打开。
 - **旧项目升级提示**：Drama Skills `0.12.0` 前的短剧文档只浏览无需改动，续写或跑 `creator_markdown_check.py` 前需将旧字段名改为现行直白名称；video-recap `0.7+` 续跑旧 `work/` 时需去掉 `--edit-mode dub`、`--review-narration` 等已移除参数。完整说明见仓库 [README](https://github.com/zenstory-ai/oh-story-dsh#升级到新版本后要做什么) 与 [CHANGELOG](https://github.com/winterhuan/oh-story-dsh/blob/main/CHANGELOG.md)。
 
 ---

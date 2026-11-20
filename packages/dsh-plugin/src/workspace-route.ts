@@ -40,6 +40,7 @@ let dramaPreflightCache: { readonly expires: number; readonly value: DramaPrefli
 interface WorkspaceRouteOptions {
   readonly maxBytes: number;
   readonly trustedHosts?: readonly string[];
+  readonly openEmptyWorkbench?: boolean;
   readonly welcomeGuide?: () => boolean;
 }
 
@@ -646,7 +647,11 @@ async function handle(context: Context, request: IncomingMessage, response: Serv
         workspaceVideoProjects(realm, files, options.maxBytes)
       ]);
       const metadataErrors = [trackingError, dramaError].filter((value): value is string => value !== undefined);
-      send(response, 200, { cwd: realm.cwd, files, games, videos, metadataErrors, welcomeGuide: options.welcomeGuide?.() ?? true });
+      send(response, 200, {
+        cwd: realm.cwd, files, games, videos, metadataErrors,
+        openEmptyWorkbench: options.openEmptyWorkbench ?? true,
+        welcomeGuide: options.welcomeGuide?.() ?? true
+      });
       return;
     }
     if (url.pathname === "/oh-story/video-preflight" && request.method === "GET") {

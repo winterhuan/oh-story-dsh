@@ -40,14 +40,14 @@
 | **互动游戏** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`、`/game-build`、`/game-qa` |
 | **视频解说** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`、`/video-reference` |
 
-> 当前版本 **v0.1.28**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[Releases](https://github.com/winterhuan/oh-story-dsh/releases) 与[升级问答](#升级到新版本后要做什么)。
+> 当前版本 **v0.1.29**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[Releases](https://github.com/winterhuan/oh-story-dsh/releases) 与[升级问答](#升级到新版本后要做什么)。
 
 ## 安装
 
 默认配套 DSH `0.2.2-rc.1`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz" &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.29/winterhuan-oh-story-dsh-0.1.29.tgz" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
@@ -91,7 +91,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 插件装进哪个 profile，该 profile 下启用技能工具的会话模式（如 `Standard`、`PTC`；`Minimal` 不加载技能）就能调用创作技能。想让默认 `web` 环境保持原样，可装进独立的 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.28/winterhuan-oh-story-dsh-0.1.28.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.29/winterhuan-oh-story-dsh-0.1.29.tgz"
 ```
 
 再编辑 `~/.dsh/profiles/story/package.json`，把 Web 界面包排在插件前面：
@@ -149,14 +149,14 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081  # 创作工作�
 
 - **本地文件即底稿**：界面展示的内容全部直接读自工作区里的 Markdown、JSON 与媒体文件，不另建封闭数据库，改文件就是改作品。
 - **付费生成先确认**：短剧媒体任务先在对话里列出预检结果与参数，你点确认后才调用外部付费接口。
-- **代码仓库零打扰**：只有目录里存在创作文件时才展开工作台，一键即可收起回原版 DSH（按工作区记忆）；职责边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+- **打开即创作**：启用插件的 profile 默认在空工作区也展开四种工作台，可随时收起并按工作区记住选择。普通用途可在 profile 配置中关闭此选项。详情见[插件包说明](packages/dsh-plugin/README.md#独立-profile-按需加载)。
 
 ## 开始创作
 
 点击左侧 **Workspaces** 旁的 **添加工作区 / Add workspace**，选定作品目录并新建会话：
 
 - **已有工程目录**：自动识别并展示「小说 / 短剧 / 游戏 / 视频」页卡，不挑会话模式。
-- **全新空目录**：选用支持技能的会话模式（默认的 `Standard` 或 `PTC`），在对话里发 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap`，写出第一份项目文件后工作台自动展开。空白会话的入门引导可当场关闭，也可在「插件 → `@winterhuan/oh-story-dsh`」或 `cordis.patch.yml` 的 `welcomeGuide: false` 开关。
+- **全新空目录**：工作台默认直接展开；选择支持技能的会话模式（如 `Standard` 或 `PTC`），再在右侧对话里发 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap` 开始创作。`Minimal` 模式不加载插件技能。空白会话的入门引导可当场关闭，也可在「插件 → `@winterhuan/oh-story-dsh`」或 `cordis.patch.yml` 的 `welcomeGuide: false` 开关。
 
 可直接复制下面的开局提示词（替换方括号内容）：
 
@@ -245,7 +245,7 @@ IMG-JIANGCHEN-SHEET 在当前集内重复，后出现的条目会遮蔽前一条
 
 ### 装上插件后，平时用 DSH 写代码会被影响吗？
 
-不会，工作台只在包含创作文件的目录里出现，普通代码仓库保持原版界面。你也可以随时在顶栏收起工作台，或按[安装](#安装)中的折叠说明装进独立的 `story` profile。
+启用插件的 profile 默认展开工作台，可从顶栏收起；普通用途可在 profile 配置中关闭空工作区自动展开。
 
 ### DeepSeek 会直接生成图片和视频吗？Token 怎么计费？
 
