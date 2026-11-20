@@ -2,6 +2,7 @@ import type { Context } from "@deepseek-ai/cordis";
 interface WorkspaceRouteOptions {
     readonly maxBytes: number;
     readonly trustedHosts?: readonly string[];
+    readonly openEmptyWorkbench?: boolean;
     readonly welcomeGuide?: () => boolean;
 }
 export interface ByteRange {
