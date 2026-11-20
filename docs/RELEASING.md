@@ -8,11 +8,11 @@ only from a `v<package-version>` tag.
 ## Upstream update issues
 
 `.github/workflows/upstream-updates.yml` runs daily and opens one
-`upstream-update` issue per new version of a bundled Skill set (latest GitHub
-release ahead of the pinned manifest commit) or of DeepSeek Harness (an npm
-dist-tag on a version the plugin does not declare). Each issue carries the sync
-checklist. Close an issue to decline that version; it will not be reopened.
-Run `pnpm upstream:updates` for a local dry run.
+`upstream-update` issue per new release of a bundled Skill suite (any GitHub
+release ahead of the pinned manifest commit) or of DeepSeek Harness (any npm
+dist-tag outside the plugin's declared range). Each issue includes the sync
+checklist. Closing an issue declines that version permanently without reopening
+it. Run `pnpm upstream:updates` locally for a dry run.
 
 ## One-time npm setup
 
@@ -27,25 +27,26 @@ After the first publication, configure npm Trusted Publishing for:
 - repository: `winterhuan/oh-story-dsh`
 - workflow: `release.yml`
 
-The workflow requests an OpenID Connect identity and publishes with provenance.
-Once Trusted Publishing is verified, the long-lived `NPM_TOKEN` secret can be
-removed.
+The release workflow requests an OpenID Connect token and publishes with
+provenance. Once Trusted Publishing is verified, remove the long-lived
+`NPM_TOKEN` secret.
 
 ## Cut a release
 
 1. Update the root and package versions, installation examples, and
-   `CHANGELOG.md` for the intended release.
-2. Run `pnpm verify:release` locally. For 0.1.13 and later, retain fresh packaged
-   Chrome E2E evidence on the default DSH `0.2.2-rc.1` line, the earlier
-   `0.2.0-rc.2` line and, from 0.1.20, the 0.2.2 trial line (now `0.2.2-rc.3`;
-   `pnpm test:dsh:next`, run locally by `verify:release` but not in CI); a
-   host line must not be announced from peer metadata or unit tests alone.
-3. Merge the release branch through a protected Pull Request after all four
-   required CI checks pass, then wait for the newest main-push CI run for that
-   exact merge commit to pass all four jobs.
-4. Create and push the matching `v<package-version>` tag at that verified commit.
+   `CHANGELOG.md`.
+2. Run `pnpm verify:release` locally. Keep fresh packaged Chrome E2E runs on
+   the default DSH `0.2.2-rc.1` line, the `0.2.0-rc.2` compatibility line, and
+   the `0.2.2` trial line (`0.2.2-rc.3` via `pnpm test:dsh:next`, included in
+   local `verify:release`); never claim support for a host line from peer
+   ranges or unit tests alone.
+3. Merge the release PR into `main` once all four required CI checks pass, then
+   wait for the `main` push CI run on that exact merge commit to pass all four
+   jobs.
+4. Create and push the matching `v<package-version>` tag on that verified
+   commit.
 
-The release workflow then:
+`release.yml` then:
 
 1. repeats the complete verification suite;
 2. builds and inspects a clean installable tarball;
@@ -53,31 +54,24 @@ The release workflow then:
 4. uploads the tarball and SHA-256 checksum to a GitHub Release;
 5. when `PUBLISH_NPM=true`, publishes the identical tarball to npm with provenance.
 
-The deterministic public manifest records the source commit, tool versions,
-tarball size, SHA-256, and npm-compatible SHA-512 integrity. Separate CI and
-promotion proofs bind the CI run/attempt and release run/attempt to the exact
-manifest and artifact name without making public release bytes change on a
-retry. GitHub and npm publishers download the exact artifact ID produced by
-that run. The producing job also passes independent SHA-256 values for the
-manifest, promotion proof, and CI proof as job outputs; every consumer compares
-those values before a write credential is exposed. This prevents a coordinated
-replacement of the tarball and all self-contained proof files.
+`RELEASE-MANIFEST.json` records the source commit, tool versions, tarball byte
+size, SHA-256, and npm SHA-512 `dist.integrity`. Separate CI and promotion
+proofs bind the CI run/attempt and release run/attempt to that manifest and
+artifact name so retries never alter the published tarball bytes. Downstream
+publisher jobs download the exact `artifact-id` from `verify` and compare
+independent SHA-256 job outputs for the manifest, promotion proof, and CI proof
+before exposing any write credential, blocking coordinated artifact replacement.
 
-GitHub assets are append-only under workflow control: an absent asset is
-uploaded, an existing byte-identical asset is accepted, and an existing asset
-with different bytes fails the run. The workflow never uses `--clobber` and it
-does not delete a partial release. npm follows the same rule: an absent version
-is published, the same version and `dist.integrity` is accepted on a retry, and
-a different integrity fails. HTTP 401/403/429/5xx and network failures are
-errors, not evidence that a release or version is absent.
+Both channels are append-only:
 
-This is workflow-enforced append-only behavior, not a claim that GitHub makes a
-tag or release immutable against repository administrators. Immediately before
-either GitHub or npm can mutate public state, the shared source gate re-resolves
-the tag, confirms the canonical public repository and protected default `main`,
-proves source ancestry, and rechecks the exact CI workflow. It refetches the
-selected run after reading its latest-attempt jobs and rejects an attempt,
-check-suite, source, status, conclusion, or GitHub Actions application change.
+- **GitHub Releases**: missing assets upload cleanly, byte-identical assets are
+  accepted on retry, and byte mismatches fail the job (`--clobber` is never
+  used and partial releases are never deleted).
+- **npm**: unpublished versions publish, matching `dist.integrity` skips cleanly
+  on retry, and integrity mismatches fail. HTTP `401`/`403`/`429`/`5xx` and
+  network errors fail immediately rather than being treated as missing versions.
+
+Before either publisher writes, the source gate re-resolves the tag, verifies the public `winterhuan/oh-story-dsh` repository and protected `main`, checks source ancestry and the newest exact-SHA main CI, then re-fetches the selected run to reject concurrent reruns.
 
 After publication, the workflow anonymously downloads and checks the GitHub
 assets and installs the public tarball with lifecycle scripts disabled. When
@@ -87,23 +81,22 @@ or enabled-channel mismatch leaves the workflow red.
 
 ## Dry-run and failure outcomes
 
-Manual dispatch is accepted only on `main`. It performs the source/CI checks,
-the complete deterministic release suite, and package/manifest upload, but the
-GitHub and npm publisher jobs do not run. Pull requests never receive release
-write or OIDC permissions.
+Manual `workflow_dispatch` runs are allowed only on `main`. They execute the
+source/CI checks, full verification suite, and artifact build without running
+the GitHub or npm publish jobs. Pull requests never receive release write or
+OIDC permissions.
 
-Tag publication requires all of the following before dependency installation
-or package construction: a stable `vX.Y.Z` tag; matching root and plugin
-versions; a dated changelog heading; the tag commit on `main`; and the newest
-GitHub Actions `CI` main-push run for that exact SHA, latest attempt, expected
-workflow path/application, and all four named jobs successful.
+Tag builds check all release invariants up front: a stable `vX.Y.Z` tag,
+matching root and plugin versions, a dated `CHANGELOG.md` heading, ancestry on
+`main`, and a green latest-attempt `CI` push run for that exact SHA across all
+four required jobs.
 
-If GitHub succeeds and npm fails (or the reverse), do not overwrite or delete
-the successful channel. Fix the credential or transient failure and rerun the
-same workflow: the successful channel must verify as byte-identical and skip,
-while the incomplete channel resumes. A moved tag, changed asset, changed npm
-integrity, missing required CI job, or older successful attempt is a hard
-failure and needs investigation rather than a retry that mutates public bytes.
+If one channel succeeds and the other fails transiently, do not delete or
+overwrite the published channel. Fix the transient issue or credential and
+re-run the failed workflow: the completed channel verifies byte identity and
+skips while the remaining channel finishes. Any moved tag, altered tarball,
+changed npm integrity, missing CI job, or superseded CI attempt is a hard stop
+that requires investigation rather than overwriting published artifacts.
 
 ## Verify the public installation
 
@@ -112,17 +105,16 @@ is enabled, do not announce npm availability until the registry reports the
 exact version:
 
 ```bash
-VERSION=0.1.29
+VERSION=0.1.30
 npm view "@winterhuan/oh-story-dsh@$VERSION" version dist.integrity
 npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "@winterhuan/oh-story-dsh@$VERSION"
 ```
 
-The default public smoke pins DSH `0.2.2-rc.1`. After it passes,
-repeat the isolated install/start/browser smoke with
-`@deepseek-ai/dsh@0.2.0-rc.2` and `@deepseek-ai/dsh@0.2.2-rc.3`; never mix host versions within one profile or
-describe a host line as supported before its Chrome run passes.
+After the default `0.2.2-rc.1` smoke passes, repeat the isolated install and
+browser check on `@deepseek-ai/dsh@0.2.0-rc.2` and
+`@deepseek-ai/dsh@0.2.2-rc.3`; never mix DSH versions inside a single profile.
 
-The GitHub Release tarball remains a registry-independent installation path:
+The GitHub Release tarball provides a registry-independent install path:
 
 ```bash
 npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v$VERSION/winterhuan-oh-story-dsh-$VERSION.tgz"
