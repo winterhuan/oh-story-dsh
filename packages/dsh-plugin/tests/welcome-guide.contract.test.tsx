@@ -62,9 +62,11 @@ function createMockConfigForm(initial: {
 describe("welcomeGuide Host Config contract", () => {
   it("declares a volatile boolean defaulting to true and reads live volatile refs", () => {
     const defaults = Config({});
+    expect(defaults.openEmptyWorkbench).toBe(true);
     expect(readWelcomeGuideConfig(defaults.welcomeGuide)).toBe(true);
 
     const disabled = Config({ welcomeGuide: false });
+    expect(Config({ openEmptyWorkbench: false }).openEmptyWorkbench).toBe(false);
     expect(readWelcomeGuideConfig(disabled.welcomeGuide)).toBe(false);
 
     let live = true;

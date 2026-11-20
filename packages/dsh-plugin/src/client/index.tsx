@@ -118,6 +118,7 @@ interface WorkspacePayload {
   readonly games: readonly GameProject[];
   readonly videos: readonly VideoProject[];
   readonly metadataErrors: readonly string[];
+  readonly openEmptyWorkbench?: boolean;
   readonly welcomeGuide?: boolean | undefined;
 }
 interface FilePayload {
@@ -658,7 +659,7 @@ function CreativeWorkbench({
   workspaceLoading,
   reload,
   open,
-  creativeProject,
+  workbenchAvailable,
   welcome,
   welcomeSaving,
   onDismissWelcome,
@@ -684,7 +685,7 @@ function CreativeWorkbench({
   readonly workspaceLoading: boolean;
   readonly reload: () => void;
   readonly open: boolean;
-  readonly creativeProject: boolean;
+  readonly workbenchAvailable: boolean;
   /** A blank Session over a workspace without creative work: the first thing a fresh DSH shows. */
   readonly welcome: boolean;
   readonly welcomeSaving: boolean;
@@ -795,14 +796,12 @@ function CreativeWorkbench({
   const setWorkbenchPreference = actions.setWorkbenchPreference;
   const applyWorkbenchPreference = useCallback((preference: WorkbenchPreference): void => {
     setWorkbenchPreference(preference);
-    // Opening the workbench before any creative work exists is a one-off visit: remembering it
-    // would decide the layout of the creator's first real project in this workspace. A choice
-    // the workspace already remembers stays the creator's to change.
+    // A visit prompted by a scan error should not set the workspace's initial layout.
     const storage = workbenchPreferenceStorage();
-    if (creativeProject || readWorkbenchPreference(storage, workspace?.cwd) !== undefined) {
+    if (workbenchAvailable || readWorkbenchPreference(storage, workspace?.cwd) !== undefined) {
       writeWorkbenchPreference(storage, workspace?.cwd, preference);
     }
-  }, [creativeProject, setWorkbenchPreference, workspace?.cwd]);
+  }, [workbenchAvailable, setWorkbenchPreference, workspace?.cwd]);
   const compactTabsId = useId();
   const compactStudioId = `${compactTabsId}-studio-panel`;
   const compactVideoStudioId = `${compactTabsId}-video-studio-panel`;
@@ -1626,10 +1625,8 @@ function CreativeWorkbench({
   };
 
   if (!open) {
-    // Without creative work there is nothing to reveal, so the plugin leaves the
-    // official conversation exactly as DSH renders it. A failed workspace request
-    // still offers the way in, because that error is only readable inside the workbench.
-    if (!creativeProject && error === undefined) {
+    // A failed workspace request keeps the launcher so the error and retry remain reachable.
+    if (!workbenchAvailable && error === undefined) {
       return welcome ? <WelcomeGuide styles={workbenchStyles} dismissing={welcomeSaving} onDismiss={onDismissWelcome} /> : null;
     }
     return <div ref={surfaceRef} className="oh-story-split-surface" data-open="false">
@@ -1909,17 +1906,17 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
     if (selectedWorkbench !== workbench) actions.setWorkbench(workbench);
   }, [actions, selectedWorkbench, workbench]);
   const chosenPreference = useStore((memory) => memory.workbenchPreference);
-  const creativeProject = hasCreativeProject(workspace);
+  const workbenchAvailable = workspace?.openEmptyWorkbench === true || hasCreativeProject(workspace);
   const welcomeController = activeWelcomeGuideController;
   const welcomeSnapshot = useSyncExternalStore(welcomeController.subscribe, welcomeController.getSnapshot, welcomeController.getSnapshot);
   // DSH 0.1.7 opens a fresh home straight into a blank Session in its default workspace, so
   // "no Session yet" no longer marks a first launch. A blank Session without creative work does.
   const sessionBlank = useSessions((state) => state.byId[sessionId]?.blank === true);
   useEffect(() => {
-    if (sessionBlank && workspace !== undefined && !creativeProject && workspace.welcomeGuide === undefined) {
+    if (sessionBlank && workspace !== undefined && !workbenchAvailable && workspace.welcomeGuide === undefined) {
       welcomeController.ensureFallbackHostConfig();
     }
-  }, [creativeProject, sessionBlank, welcomeController, workspace]);
+  }, [workbenchAvailable, sessionBlank, welcomeController, workspace]);
   const welcomeEnabled = resolveWelcomeGuideEnabled({
     formStatus: welcomeSnapshot.formStatus,
     hostValue: welcomeSnapshot.hostValue,
@@ -1928,7 +1925,7 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
     localPreference: welcomeSnapshot.localPreference,
     workspaceWelcomeGuide: workspace?.welcomeGuide ?? welcomeSnapshot.fallbackHostValue
   });
-  const welcome = sessionBlank && workspace !== undefined && !workspaceLoading && !creativeProject && welcomeEnabled;
+  const welcome = sessionBlank && workspace !== undefined && !workspaceLoading && !workbenchAvailable && welcomeEnabled;
   // The Session Store holds this Session's choice; localStorage carries the workspace's
   // last choice across restarts. Reading it here keeps the decision in the same render
   // that learns the workspace, so a collapsed workbench never flashes the layout open.
@@ -1937,7 +1934,7 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
     [workspace?.cwd]
   );
   const preference = chosenPreference ?? storedPreference;
-  const open = resolveWorkbenchOpen(preference, creativeProject);
+  const open = resolveWorkbenchOpen(preference, workbenchAvailable);
   useLayoutEffect(() => {
     const document = marker.current?.ownerDocument;
     if (document === undefined) return;
@@ -2090,7 +2087,7 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
       workspaceLoading={workspaceLoading}
       reload={reload}
       open={open}
-      creativeProject={creativeProject}
+      workbenchAvailable={workbenchAvailable}
       welcome={welcome}
       welcomeSaving={welcomeSnapshot.saving}
       onDismissWelcome={() => { void welcomeController.setEnabled(false); }}

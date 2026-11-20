@@ -112,7 +112,7 @@ is enabled, do not announce npm availability until the registry reports the
 exact version:
 
 ```bash
-VERSION=0.1.28
+VERSION=0.1.29
 npm view "@winterhuan/oh-story-dsh@$VERSION" version dist.integrity
 npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "@winterhuan/oh-story-dsh@$VERSION"
 ```
