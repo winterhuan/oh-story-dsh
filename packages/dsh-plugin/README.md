@@ -1,4 +1,4 @@
-> 此 fork 的包名为 `@winterhuan/oh-story-dsh`。下方示例安装 GitHub Release 预构建包；源码构建可在仓库根目录运行 `pnpm install --frozen-lockfile` 和 `pnpm pack:release`。原项目：[zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh)。
+> 此 fork 的包名为 `@winterhuan/oh-story-dsh`。下方示例从固定源码 Tag 的 `packages/dsh-plugin` 安装；维护者运行 `pnpm build` 后将构建产物与源码一起提交。原项目：[zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh)。
 
 # @winterhuan/oh-story-dsh
 
@@ -18,7 +18,7 @@
 默认配套 DSH `0.2.2-rc.1`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前全局安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.30/winterhuan-oh-story-dsh-0.1.30.tgz" &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
@@ -68,7 +68,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 想让默认 `web` 环境保持原样，可把插件装进独立的 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.30/winterhuan-oh-story-dsh-0.1.30.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin"
 ```
 
 将 `~/.dsh/profiles/story/package.json` 中的 `dsh.profile.bundles` 设为 `["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@winterhuan/oh-story-dsh"]`，随后即可用 `npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081` 独立启动创作工作台。

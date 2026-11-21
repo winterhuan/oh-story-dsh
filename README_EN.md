@@ -1,6 +1,6 @@
-> This fork publishes `@winterhuan/oh-story-dsh`. Install the prebuilt GitHub Release below, or build it from the repository root with `pnpm install --frozen-lockfile` and `pnpm pack:release`. Original upstream: [zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh).
+> This fork publishes `@winterhuan/oh-story-dsh`. Install from `packages/dsh-plugin` at the fixed source tag below; maintainers run `pnpm build` and commit the output with the source. Original upstream: [zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh).
 
-<!-- Last synced with README.md: 2026-11-20 -->
+<!-- Last synced with README.md: 2026-11-21 -->
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/zenstory-ai/zenstory/main/apps/web/public/brand/zenstory-ai-mark.svg" alt="ZenStory AI" width="76" height="76">
@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="https://github.com/zenstory-ai/oh-story-dsh/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/zenstory-ai/oh-story-dsh?style=flat-square&color=22D3EE&logo=github&logoColor=white&label=Stars"></a>
-  <a href="https://github.com/winterhuan/oh-story-dsh/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/winterhuan/oh-story-dsh?style=flat-square&color=081431&label=Release"></a>
+  <img alt="Version 0.1.31" src="https://img.shields.io/badge/version-0.1.31-081431?style=flat-square">
   <img alt="Workbenches 4" src="https://img.shields.io/badge/Workbenches-4-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
@@ -42,14 +42,14 @@
 | **Interactive game** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`, `/game-build`, `/game-qa` |
 | **Video recap** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`, `/video-reference` |
 
-> Latest release: **v0.1.30**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), [Releases](https://github.com/winterhuan/oh-story-dsh/releases), and [Upgrading](#what-do-i-do-after-upgrading) for release and migration notes.
+> Current version: **v0.1.31**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), the [plugin market](https://winterhuan.github.io/dsh-creative/index.json), and [Upgrading](#what-do-i-do-after-upgrading) for version and migration notes.
 
 ## Installation
 
 Paired by default with DSH `0.2.2-rc.1` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.30/winterhuan-oh-story-dsh-0.1.30.tgz" &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
@@ -93,7 +93,7 @@ The video pipeline requires **Python 3.10+** and **ffmpeg / ffprobe** on `PATH` 
 Bundled Skills load in any session preset that enables the skill tool (`Standard` or `PTC`; `Minimal` skips skills). To leave your default `web` profile untouched, install into a separate `story` profile:
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.30/winterhuan-oh-story-dsh-0.1.30.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin"
 ```
 
 Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the plugin:

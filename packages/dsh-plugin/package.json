@@ -1,6 +1,6 @@
 {
   "name": "@winterhuan/oh-story-dsh",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "A DSH plugin for fiction, short-drama, interactive-game, and video-recap production",
   "keywords": [
     "deepseek-harness",
@@ -70,7 +70,6 @@
   ],
   "scripts": {
     "build": "tsx ../../scripts/build-dsh-plugin.ts && tsc -p tsconfig.build.json",
-    "prepack": "pnpm build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:contract": "vitest run contract"

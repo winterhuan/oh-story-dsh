@@ -274,7 +274,8 @@ binds the unchanged package to source
 `f207fa92863bd3626b8ee6bd7b5ad30762ef205c`. npm provenance identifies the recovery
 workflow/main invocation, not the original tag-build invocation; the manifest,
 original producer proofs and exact protected-main CI independently bind package
-source. See [Dry-run and failure outcomes](RELEASING.md#dry-run-and-failure-outcomes).
+source. The current publication path is documented in
+[`RELEASING.md`](RELEASING.md#cut-a-release).
 
 ## Test architecture
 
@@ -285,7 +286,7 @@ source. See [Dry-run and failure outcomes](RELEASING.md#dry-run-and-failure-outc
 | Cross-platform gate | `pnpm verify:portable` | Type, asset, unit, and build checks on macOS and Windows |
 | Packaged DSH integration | `pnpm test:dsh` | Deterministic correctness gate for build, npm tarball, profile installation, official DSH Web startup, Session APIs, skill catalog, workspace routes, Role execution, and Chrome UI |
 | Real provider | `pnpm test:dsh:real` | Paid compatibility check against the official DeepSeek API covering durable Agent turns, Oh Story Role calls, fiction and short-drama review, read-only project digests, and log redaction |
-| Release candidate | `pnpm verify:release` | Full deterministic gate plus packaged DSH Web runs across supported host lines before cutting a tarball |
+| Release candidate | `pnpm verify:release` | Full deterministic gate plus packaged DSH Web runs across supported host lines before tagging the source |
 
 The deterministic packaged Role path is part of every release gate. Paid real-provider runs stay outside Pull Request CI because live model and network behavior are non-deterministic; the manual `Real Provider` workflow requires `DEEPSEEK_API_KEY`, and a missing-credential skip never counts as a pass.
 
@@ -362,7 +363,7 @@ Event totals are observations, not fixed assertions. This run establishes provid
 
 - `.github/workflows/ci.yml`: Ubuntu quality gate, macOS/Windows portability, then packaged DSH Web integration.
 - `.github/workflows/real-provider.yml`: manual paid compatibility observation with separate credential-preflight and real-test jobs. The always-running summary distinguishes `EXECUTED_AND_PASSED`, `EXECUTED_AND_FAILED`, `SKIPPED_NO_CREDENTIAL`, `PREFLIGHT_FAILED` and `PROVIDER_JOB_NOT_COMPLETED`. Only `EXECUTED_AND_PASSED` succeeds; missing credentials, preflight failures, cancellations and abnormal skips deliberately fail the workflow instead of producing a green non-result.
-- `.github/workflows/release.yml`: tagged release gate, `.tgz` artifact upload, GitHub Release creation and npm publication with provenance.
+- Market publication uses a fixed Git package and commit as described in [`RELEASING.md`](RELEASING.md); it does not create a GitHub Release or publish to npm.
 
 ## Commands
 
@@ -373,5 +374,4 @@ pnpm test:dsh
 pnpm verify:release
 DEEPSEEK_API_KEY_FILE=/path/to/key pnpm test:dsh:real
 DEEPSEEK_API_KEY=... pnpm demo
-pnpm pack:release
 ```

@@ -10,12 +10,12 @@ oh-story-dsh 是 DeepSeek Harness（DSH）的社区插件，发布一个包 `@wi
 ## 验证
 
 - 报告完成前运行 `pnpm verify`（lint、类型、资产完整性、DSH 边界、单测与构建）。单独检查可用 `pnpm lint`、`pnpm typecheck`、`pnpm assets:check`、`pnpm test`。
-- 发版前运行 `pnpm verify:release`（`verify` 加打包后原生 DSH Web 集成测试）。
+- 发版前运行 `pnpm verify:release`（`verify` 加原生 DSH Web 集成测试）。
 - `pnpm test:dsh:real` 与 `pnpm demo` 调用真实 DeepSeek，只在发布前观察 provider 兼容性或重做演示图时运行；缺凭据的 skipped 不算 passed。凭据只放环境变量或临时 Key 文件，不写入仓库。
 
 ## 发布
 
-只按 [`docs/RELEASING.md`](docs/RELEASING.md) 发布：版本、安装示例与 `CHANGELOG.md` 先更新，经受保护的 PR 合入 `main` 且该提交的 main CI 四个 Job 全部通过后，才在该提交打与包版本一致的 `v<package-version>` Tag，由 `release.yml` 发布。不要移动 Tag、覆盖已发布资产，也不要绕过工作流手动发 npm。`CHANGELOG.md` 只记用户可见变更，正文中文。
+只按 [`docs/RELEASING.md`](docs/RELEASING.md) 发布：更新版本、安装示例与 `CHANGELOG.md`，将 `packages/dsh-plugin/lib` 与源码一起提交，经受保护的 PR 合入 `main` 且 CI 通过后创建不可移动的 `v<package-version>` Tag，再将该提交和 `packages/dsh-plugin` 路径写入插件市场。不要创建独立发布包或 GitHub Release，不要移动已发布 Tag，也不要发布 npm。`CHANGELOG.md` 只记用户可见变更，正文中文。
 
 ## 决策笔记
 
