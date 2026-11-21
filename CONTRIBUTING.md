@@ -57,7 +57,7 @@ pnpm assets:check
 - `CI / Portability`：在 macOS 26 Intel 与 Windows 上运行类型检查、资产校验、单测与构建，验证跨平台路径处理。为保持分支保护规则名称不变，macOS 检查项仍叫 `Portability (macos-latest)`，实际 runner 指定为 `macos-26-intel`（并非 GitHub 的 Arm64 `macos-latest` 镜像）。
 - `CI / Packaged DSH Web integration`：打出 tarball 装入官方 DSH Web，并用 Chrome 验证能力目录、工作区安全边界与工作台界面。
 - `Real Provider`：手动触发的官方接口兼容性检查，凭据预检与实测分属两个独立 Job。配置 `DEEPSEEK_API_KEY` 时实测 Job 执行，未配置时跳过；汇总区分 `EXECUTED_AND_PASSED`、`EXECUTED_AND_FAILED`、`SKIPPED_NO_CREDENTIAL`、`PREFLIGHT_FAILED` 与 `PROVIDER_JOB_NOT_COMPLETED` 五种状态，只有 `EXECUTED_AND_PASSED` 会让工作流通过，其余状态一律判为失败。
-- `Release`：手动触发时仅在 `main` 上执行打包演练，不对外发布；推送正式 `vX.Y.Z` Tag 时，该提交必须已合入 `main` 且最新一轮完整 CI 四个 Job 全部通过，工作流才会把单次构建出的同一份 `.tgz` 同步发往 GitHub Release 与 npm。重跑工作流时，字节一致的已有产物会自动跳过，字节不一致则报错终止，绝不覆盖已发布内容。
+- 发布不创建 GitHub Release、npm 包或独立发布分支。主分支 CI 通过后，构建 `packages/dsh-plugin/lib` 并与源码一起提交；市场固定源码 Tag 的提交和 `packages/dsh-plugin` 安装路径。
 
 ## 发布检查
 
@@ -65,7 +65,6 @@ pnpm assets:check
 2. 运行 `pnpm verify:release`。
 3. 需要验证官方 DeepSeek 接口兼容性时，运行 `pnpm test:dsh:real`，确认实测通过（因缺凭据跳过的不能算通过）、示例项目摘要未变且日志中未泄露凭据；这项观察不替代第 2 步的发布门禁。
 4. 需要重录 README 演示图时，运行 `DEEPSEEK_API_KEY=... pnpm demo`（需安装 `ffmpeg`），通过真实 DeepSeek 会话重新生成并核对四张动图。设置 `OH_STORY_DEMO_MOCK=1` 可用本地固定样例出图调试，但不能当作真实模型运行记录。
-5. 运行 `pnpm pack:release` 并检查生成的 tarball。
-6. 按 [`docs/RELEASING.md`](docs/RELEASING.md) 在已通过 CI 的提交上打与包版本一致的 Tag，由发布工作流完成正式发布。
+5. 按 [`docs/RELEASING.md`](docs/RELEASING.md) 推送已通过 CI 的源码 Tag，更新插件市场索引并完成隔离远程安装验证。
 
 架构边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)，验证说明见 [`docs/VALIDATION.md`](docs/VALIDATION.md)。

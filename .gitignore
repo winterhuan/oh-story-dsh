@@ -1,6 +1,5 @@
 node_modules/
 dist/
-packages/dsh-plugin/lib/
 coverage/
 playwright-report/
 test-results/

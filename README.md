@@ -1,4 +1,4 @@
-> 此 fork 的包名为 `@winterhuan/oh-story-dsh`。下方示例安装 GitHub Release 预构建包；源码构建可在仓库根目录运行 `pnpm install --frozen-lockfile` 和 `pnpm pack:release`。原项目：[zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh)。
+> 此 fork 的包名为 `@winterhuan/oh-story-dsh`。下方示例从固定源码 Tag 的 `packages/dsh-plugin` 安装；维护者运行 `pnpm build` 后将构建产物与源码一起提交。原项目：[zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh)。
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/zenstory-ai/zenstory/main/apps/web/public/brand/zenstory-ai-mark.svg" alt="ZenStory AI" width="76" height="76">
@@ -24,7 +24,7 @@
 
 <p align="center">
   <a href="https://github.com/zenstory-ai/oh-story-dsh/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/zenstory-ai/oh-story-dsh?style=flat-square&color=22D3EE&logo=github&logoColor=white&label=Stars"></a>
-  <a href="https://github.com/winterhuan/oh-story-dsh/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/winterhuan/oh-story-dsh?style=flat-square&color=081431&label=Release"></a>
+  <img alt="Version 0.1.31" src="https://img.shields.io/badge/version-0.1.31-081431?style=flat-square">
   <img alt="Workbenches 4" src="https://img.shields.io/badge/Workbenches-4-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
@@ -40,14 +40,14 @@
 | **互动游戏** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`、`/game-build`、`/game-qa` |
 | **视频解说** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`、`/video-reference` |
 
-> 当前版本 **v0.1.30**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[Releases](https://github.com/winterhuan/oh-story-dsh/releases) 与[升级问答](#升级到新版本后要做什么)。
+> 当前版本 **v0.1.31**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.3`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[插件市场](https://winterhuan.github.io/dsh-creative/index.json) 与[升级问答](#升级到新版本后要做什么)。
 
 ## 安装
 
 默认配套 DSH `0.2.2-rc.1`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.30/winterhuan-oh-story-dsh-0.1.30.tgz" &&
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin" &&
 npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 ```
 
@@ -91,7 +91,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 在装有本插件的 profile 下，只要会话模式启用了技能工具（如 `Standard`、`PTC`；`Minimal` 不加载技能），就能调用内置创作技能。想让默认 `web` 环境保持原样，可装进独立的 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "https://github.com/winterhuan/oh-story-dsh/releases/download/v0.1.30/winterhuan-oh-story-dsh-0.1.30.tgz"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin"
 ```
 
 再编辑 `~/.dsh/profiles/story/package.json`，把 Web 界面包排在插件前面：

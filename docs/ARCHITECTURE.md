@@ -100,4 +100,4 @@ Each workbench projects its pinned upstream contract without becoming a competin
 
 ## Release boundary
 
-`pnpm build` emits Host and Browser bundles under `packages/dsh-plugin/lib`, copies the four pinned knowledge sets with CommonJS-safe `package.json` boundaries for upstream scripts, and fails if excluded scrapers, standalone dashboards, development React builds, or parallel-runtime markers appear. Generated `lib/` artifacts and release tarballs stay out of Git history.
+`pnpm build` emits Host and Browser bundles under `packages/dsh-plugin/lib`, copies the four pinned knowledge sets with CommonJS-safe `package.json` boundaries for upstream scripts, and fails if excluded scrapers, standalone dashboards, development React builds, or parallel-runtime markers appear. The source Tag commits `lib/` with the source so DSH can install the package directory without running build scripts.
