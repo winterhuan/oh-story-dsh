@@ -18,15 +18,13 @@ declines that version permanently without reopening it. Run
 
 1. Update the root and package versions, installation examples, and
    `CHANGELOG.md`.
-2. Run `pnpm verify:release`. This runs the deterministic checks and the
-   packaged DSH Web integration on the supported host lines.
-3. Merge the release change into `main` and wait for the exact main commit's
-   required CI jobs to pass.
-4. Run `pnpm build` and review the generated `packages/dsh-plugin/lib` changes.
-   Keep that directory in the commit; do not create a tarball or a release
-   branch.
-5. Push the source commit and create the append-only tag `v<package-version>`.
-6. Install the exact tag in an isolated DSH profile:
+2. Run `pnpm verify:release`, which builds the plugin and runs the deterministic
+   checks and packaged DSH Web integration on the supported host lines. Review
+   the generated `packages/dsh-plugin/lib` changes.
+3. Commit the source and `lib/` together. Merge the PR into `main` after its
+   required CI passes, then wait for the exact main commit's CI to pass.
+4. Create and push the append-only tag `v<package-version>` on that main commit.
+5. Install the exact tag in an isolated DSH profile:
 
    ```bash
    dsh plugin --profile release-check add \
@@ -35,7 +33,7 @@ declines that version permanently without reopening it. Run
 
    Check the synthesized plugin configuration and the DSH Web smoke before
    publishing the market entry.
-7. Add the version to the market `index.json` with the source commit, package
+6. Add the version to the market `index.json` with the source commit, package
    path, DSH engine range, and UTC publish timestamp. Commit and push the market
    `gh-pages` worktree.
 

@@ -15,7 +15,7 @@ oh-story-dsh 是 DeepSeek Harness（DSH）的社区插件，发布一个包 `@wi
 
 ## 发布
 
-只按 [`docs/RELEASING.md`](docs/RELEASING.md) 发布：更新版本、安装示例与 `CHANGELOG.md`，经受保护的 PR 合入 `main` 且 CI 通过后，将 `packages/dsh-plugin/lib` 与源码一起提交并创建不可移动的 `v<package-version>` Tag，再将该提交和 `packages/dsh-plugin` 路径写入插件市场。不要创建独立发布包或 GitHub Release，不要移动已发布 Tag，也不要发布 npm。`CHANGELOG.md` 只记用户可见变更，正文中文。
+只按 [`docs/RELEASING.md`](docs/RELEASING.md) 发布：更新版本、安装示例与 `CHANGELOG.md`，将 `packages/dsh-plugin/lib` 与源码一起提交，经受保护的 PR 合入 `main` 且 CI 通过后创建不可移动的 `v<package-version>` Tag，再将该提交和 `packages/dsh-plugin` 路径写入插件市场。不要创建独立发布包或 GitHub Release，不要移动已发布 Tag，也不要发布 npm。`CHANGELOG.md` 只记用户可见变更，正文中文。
 
 ## 决策笔记
 
