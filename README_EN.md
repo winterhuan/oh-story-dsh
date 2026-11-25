@@ -42,15 +42,15 @@
 | **Interactive game** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`, `/game-build`, `/game-qa` |
 | **Video recap** | [video-recap-skills 0.8.0](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.8.0) · 2 Skills | `/video-recap`, `/video-reference` |
 
-> Current version: **v0.1.32**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.5`. See [CHANGELOG.md](CHANGELOG.md), the [plugin market](https://winterhuan.github.io/dsh-creative/index.json), and [Upgrading](#what-do-i-do-after-upgrading) for version and migration notes.
+> Current version: **v0.1.32**, paired by default with DeepSeek Harness `0.2.2-rc.5` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.1`. See [CHANGELOG.md](CHANGELOG.md), the [plugin market](https://winterhuan.github.io/dsh-creative/index.json), and [Upgrading](#what-do-i-do-after-upgrading) for version and migration notes.
 
 ## Installation
 
-Paired by default with DSH `0.2.2-rc.1` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
+Paired by default with DSH `0.2.2-rc.5` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 Keep the terminal open; if the browser does not launch automatically, open the full `http://127.0.0.1:3080/?token=...` URL printed in the terminal (first-time login uses the `token` query parameter). Add a provider and API key under **Settings → Models** or export `DEEPSEEK_API_KEY` before launching; to browse local projects without an API key, click **Configure later** in the first-run guide.
@@ -73,7 +73,7 @@ DeepSeek writes the screenplay, storyboard, and prompts; `short-drama-produce` c
 ```bash
 export OPENAI_API_KEY=...
 export ARK_API_KEY=... SEEDANCE_MODEL=...
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 **Production details** shows which vendors are ready and which variables are missing (checking presence only, never reading or returning secret values). The built-in `seedance` and `minimax-h3` profiles accept character voice references (`reference_audio`) by default; confirm that your configured model supports audio input. For custom adapters, timeouts, or external `reference_roles`, point `OH_STORY_DRAMA_ADAPTER_CONFIG` at your config file. See the bundled `short-drama-produce/references/builtin-providers.md` for parameter limits.
@@ -93,7 +93,7 @@ Video Recap 0.8.0 is local-first and only requires **Python 3.10+** and **ffmpeg
 Bundled Skills load in any session preset that enables the skill tool (`Standard` or `PTC`; `Minimal` skips skills). To leave your default `web` profile untouched, install into a separate `story` profile:
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
 ```
 
 Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the plugin:
@@ -109,8 +109,8 @@ Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the 
 Run both profiles side by side on different ports while sharing models, workspaces, and session history:
 
 ```bash
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web                          # stock DSH
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081  # creation workbenches
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web                          # stock DSH
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 --profile story --port 3081  # creation workbenches
 ```
 
 </details>

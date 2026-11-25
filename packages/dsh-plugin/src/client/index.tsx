@@ -1520,7 +1520,9 @@ function CreativeWorkbench({
         if (paths.has(path) || activityPaths.has(path)) continue;
         // A write that just settled is on disk before the workspace reload lists it; keep its
         // preview (and so the selection) until then. A denied write never settles and is pruned.
-        if (value.source === "agent" && sessionRunning && path === settledPath) continue;
+        // The Turn can finish before the workspace response, so this cannot depend on
+        // sessionRunning still being true.
+        if (value.source === "agent" && path === settledPath) continue;
         if (value.source === "human" && value.content !== value.saved) {
           if (value.missing !== true) {
             next[path] = { ...value, missing: true, error: "文件已从工作区移除。本地草稿仍保留，可复制后放弃草稿。" };

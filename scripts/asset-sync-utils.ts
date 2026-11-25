@@ -61,6 +61,6 @@ export async function fileDigest(path: string): Promise<{ readonly sha256: strin
 
 export async function manifestFiles(root: string): Promise<readonly ManifestFileEntry[]> {
   return Promise.all((await regularFiles(root))
-    .filter((path) => basename(path) !== "manifest.json")
+    .filter((path) => basename(path) !== "manifest.json" && isPortableSourceAsset(path))
     .map(async (path) => ({ path: portableRelative(root, path), ...await fileDigest(path) })));
 }

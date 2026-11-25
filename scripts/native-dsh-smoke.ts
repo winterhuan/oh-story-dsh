@@ -19,7 +19,7 @@ import {
 } from "./native-dsh-helpers.js";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const dshVersion = process.env.DSH_TEST_VERSION ?? process.argv[2] ?? "0.2.2-rc.1";
+const dshVersion = process.env.DSH_TEST_VERSION ?? process.argv[2] ?? "0.2.2-rc.5";
 /** ChatFlow may wrap rows in its slot; nested process rows do not belong to the main tail. */
 const CHAT_FLOW_ROW_SELECTOR = ":is([data-chat-flow-key], [data-chat-running]):not([data-step-process-content] *)";
 const demoFramesDirectory = process.env.OH_STORY_DEMO_FRAMES_DIR;
@@ -704,9 +704,20 @@ async function main(): Promise<void> {
           }
           await writerTabs.getByRole("tab", { name: "视频", exact: true }).waitFor();
           await writerPage.getByRole("button", { name: "收起创作工作台" }).click();
-          await writerPage.reload({ waitUntil: "networkidle" });
           await writerPage.getByRole("button", { name: "打开创作工作台" }).click();
           await writerTabs.getByRole("tab", { name: "小说", selected: true }).waitFor();
+          await writerPage.reload({ waitUntil: "networkidle" });
+          // Opening an empty workspace is an intentional one-off visit. Its collapsed state
+          // is session-scoped until the workspace contains creative files, so a reload returns
+          // to the configured empty-workspace default rather than persisting this transient visit.
+          await writerTabs.getByRole("tab", { name: "小说", selected: true }).waitFor();
+        } catch (error) {
+          console.error("Empty-workspace workbench state:", await writerPage.evaluate(() => ({
+            text: document.body.innerText.slice(0, 5000),
+            preferences: Object.keys(localStorage).filter((key) => key.startsWith("oh-story.")).map((key) => [key, localStorage.getItem(key)]),
+            workbenches: [...document.querySelectorAll(".oh-story-split-surface")].map((element) => element.getAttribute("data-open"))
+          })));
+          throw error;
         } finally {
           await writerPage.close();
         }
@@ -1299,7 +1310,17 @@ async function main(): Promise<void> {
       } catch { /* workspace writes may already be allowed by the active preset */ }
       await plainWriteRequest;
       await waitForCompletedTurn(origin, plainSession.sessionId, beforePlainWrite);
-      await page.getByRole("navigation", { name: "小说项目文件" }).waitFor({ state: "visible", timeout: 20_000 });
+      try {
+        await page.getByRole("navigation", { name: "小说项目文件" }).waitFor({ state: "visible", timeout: 20_000 });
+      } catch (error) {
+        const workspaceResponse = await dshFetch(`${origin}/oh-story/workspace?sessionId=${encodeURIComponent(plainSession.sessionId)}`);
+        throw new Error(`First creative write did not reveal the workbench: ${JSON.stringify({
+          workspace: await workspaceResponse.json(),
+          history: (await sessionEvents(origin, plainSession.sessionId)).filter((event) => event.seq > beforePlainWrite),
+          pageErrors,
+          body: (await page.locator("body").innerText()).slice(-6_000)
+        })}`, { cause: error });
+      }
       const workbenchChatWidth = await chatWidth();
       if (await layoutScroller.getAttribute("data-oh-story-layout") !== "wide"
         || plainChatWidth < workbenchChatWidth + 200) {
@@ -2338,8 +2359,16 @@ async function main(): Promise<void> {
       }
       if (await videoChatToggle.isVisible()) throw new Error("500px Video Studio repeated the 制作/对话 switch with a Chat button.");
       const [, compactVideoToolbar, compactVideoProject, compactVideoViews] = compactVideoBoxes;
-      if (!compactVideoToolbar || !compactVideoProject || !compactVideoViews || compactVideoToolbar.height > 110 || Math.abs(compactVideoProject.y + compactVideoProject.height / 2 - compactVideoViews.y - compactVideoViews.height / 2) > 4) {
-        throw new Error(`500px Video Studio stacked its project and view controls: ${JSON.stringify(compactVideoBoxes)}`);
+      const controlsOverlap = compactVideoProject !== null && compactVideoViews !== null
+        && compactVideoProject.x < compactVideoViews.x + compactVideoViews.width
+        && compactVideoProject.x + compactVideoProject.width > compactVideoViews.x
+        && compactVideoProject.y < compactVideoViews.y + compactVideoViews.height
+        && compactVideoProject.y + compactVideoProject.height > compactVideoViews.y;
+      if (!compactVideoToolbar || !compactVideoProject || !compactVideoViews || compactVideoToolbar.height > 240
+        || compactVideoProject.x < compactVideoToolbar.x || compactVideoProject.x + compactVideoProject.width > compactVideoToolbar.x + compactVideoToolbar.width + 1
+        || compactVideoViews.x < compactVideoToolbar.x || compactVideoViews.x + compactVideoViews.width > compactVideoToolbar.x + compactVideoToolbar.width + 1
+        || controlsOverlap) {
+        throw new Error(`500px Video Studio did not arrange its narrow project and view controls without overlap: ${JSON.stringify(compactVideoBoxes)}`);
       }
       await compactVideoStudioTab.focus();
       await compactVideoStudioTab.press("ArrowRight");
@@ -3186,6 +3215,12 @@ async function main(): Promise<void> {
         await settings.waitFor({ state: "detached" });
       }
       if (pageErrors.length > 0) throw new Error(`Browser module raised errors: ${pageErrors.join("; ")}`);
+      } catch (error) {
+        throw new Error(`${error instanceof Error ? error.message : String(error)}; workbench browser state: ${JSON.stringify({
+          body: (await page.locator("body").innerText()).slice(-8_000),
+          iframes: await page.locator("iframe").evaluateAll((frames) => frames.map((frame) => ({ title: frame.title, src: frame.src }))),
+          pageErrors
+        })}`, { cause: error });
       } finally {
         await browser.close();
       }

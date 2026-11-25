@@ -40,15 +40,15 @@
 | **互动游戏** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`、`/game-build`、`/game-qa` |
 | **视频解说** | [video-recap-skills 0.8.0](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.8.0) · 2 Skills | `/video-recap`、`/video-reference` |
 
-> 当前版本 **v0.1.32**，默认配套 DeepSeek Harness `0.2.2-rc.1`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.5`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[插件市场](https://winterhuan.github.io/dsh-creative/index.json) 与[升级问答](#升级到新版本后要做什么)。
+> 当前版本 **v0.1.32**，默认配套 DeepSeek Harness `0.2.2-rc.5`（需 Node.js 24.9+），同时兼容 `0.2.1-rc.5`、`0.2.0-rc.2` 与 `0.2.2-rc.1`。版本记录与迁移说明见 [CHANGELOG.md](CHANGELOG.md)、[插件市场](https://winterhuan.github.io/dsh-creative/index.json) 与[升级问答](#升级到新版本后要做什么)。
 
 ## 安装
 
-默认配套 DSH `0.2.2-rc.1`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前安装）：
+默认配套 DSH `0.2.2-rc.5`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 保持终端开启；浏览器若未自动弹出，复制终端打印的完整 `http://127.0.0.1:3080/?token=...` 链接打开（首次登录靠链接里的 `token` 认证）。进入后在「设置 → 模型」填入 Provider 与 API Key，或在启动前设置环境变量 `DEEPSEEK_API_KEY`；只看本地已有工程可在首次引导点「稍后配置 / Configure later」。
@@ -71,7 +71,7 @@ DeepSeek 负责写剧本、分镜和提示词；生成图片、视频、配音�
 ```bash
 export OPENAI_API_KEY=...
 export ARK_API_KEY=... SEEDANCE_MODEL=...
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 短剧「制作详情」会列出各供应商是否就绪、缺哪个环境变量（只检查变量是否存在，不读取或回传密钥值）。内置 `seedance` 与 `minimax-h3` 默认支持角色参考音频 `reference_audio`（仍请确认所选模型本身支持音频输入）；要自定义适配器、超时或外部 `reference_roles`，把 `OH_STORY_DRAMA_ADAPTER_CONFIG` 指向自定义配置文件即可。参数范围见内置的 `short-drama-produce/references/builtin-providers.md`。
@@ -91,7 +91,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 在装有本插件的 profile 下，只要会话模式启用了技能工具（如 `Standard`、`PTC`；`Minimal` 不加载技能），就能调用内置创作技能。想让默认 `web` 环境保持原样，可装进独立的 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
 ```
 
 再编辑 `~/.dsh/profiles/story/package.json`，把 Web 界面包排在插件前面：
@@ -107,8 +107,8 @@ npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --
 之后两个环境可用不同端口同时运行，模型配置、工作区与会话记录由 DSH 共享：
 
 ```bash
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web                          # 原版 DSH
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081  # 创作工作台
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web                          # 原版 DSH
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 --profile story --port 3081  # 创作工作台
 ```
 
 </details>

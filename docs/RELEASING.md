@@ -50,6 +50,6 @@ dsh plugin --profile web add \
 ```
 
 Use the same DSH version for installation and startup. The default supported
-line is `@deepseek-ai/dsh@0.2.2-rc.1`; compatibility checks also cover
-`0.2.0-rc.2` and `0.2.2-rc.5`. Keep each DSH version in its own profile when
+line is `@deepseek-ai/dsh@0.2.2-rc.5`; compatibility checks also cover
+`0.2.0-rc.2` and `0.2.2-rc.1`. Keep each DSH version in its own profile when
 testing compatibility.
