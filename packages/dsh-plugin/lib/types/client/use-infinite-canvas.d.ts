@@ -33,6 +33,7 @@ export declare function useInfiniteCanvas<Node extends InfiniteCanvasNode>(optio
     draggingId: string | undefined;
     zoomIn: () => void;
     zoomOut: () => void;
+    resetZoom: () => void;
     fitAll: () => void;
     resetLayout: () => void;
     startPan: (event: ReactPointerEvent<HTMLDivElement>) => void;

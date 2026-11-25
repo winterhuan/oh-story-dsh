@@ -19,7 +19,7 @@ export declare function pythonVersion(value: string | undefined, floor: PythonFl
  * `python` at 3.12. The command is written into the adapter config's argv, so
  * this is the same choice everywhere the plugin starts Python.
  */
-export declare function hostPython(floor: PythonFloor, probe?: (command: string, args: readonly string[]) => Promise<string | undefined>): Promise<{
+export declare function hostPython(floor: PythonFloor, probe?: (command: string, args: readonly string[]) => Promise<string | undefined>, platform?: NodeJS.Platform): Promise<{
     readonly command: string;
     readonly probe: PythonProbe;
 }>;

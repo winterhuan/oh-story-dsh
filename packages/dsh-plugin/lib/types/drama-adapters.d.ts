@@ -24,12 +24,19 @@ export interface DramaAdapterSpec {
     /** Section heading in the consolidated `builtin-providers.md` reference. */
     readonly referenceHeading: string;
 }
+export interface DramaAdapterOptionalEnvStatus {
+    readonly name: string;
+    readonly label: string;
+    readonly configured: boolean;
+    readonly note: string;
+}
 export interface DramaAdapterStatus {
     readonly name: string;
     readonly label: string;
     readonly modality: DramaAdapterModality;
     readonly configured: boolean;
     readonly missing: readonly string[];
+    readonly optionalEnv?: readonly DramaAdapterOptionalEnvStatus[];
 }
 export interface DramaAdapterConfigLocation {
     readonly path: string;
@@ -39,6 +46,8 @@ export interface DramaAdapterConfigLocation {
 /** Point at a creator-owned adapter config instead of the generated one. */
 export declare const DRAMA_ADAPTER_CONFIG_ENV = "OH_STORY_DRAMA_ADAPTER_CONFIG";
 export declare const DRAMA_ADAPTERS: readonly DramaAdapterSpec[];
+/** Backward-compatible upstream provider CLI aliases (Drama Skills 0.13.0 keeps `gpt-image-2` for `openai-image`). */
+export declare const DRAMA_ADAPTER_ALIASES: Readonly<Record<string, string>>;
 /**
  * The generated file is keyed by the skill root so two DSH profiles running
  * different plugin installs never overwrite each other's registration.

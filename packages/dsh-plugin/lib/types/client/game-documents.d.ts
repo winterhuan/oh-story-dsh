@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { type RefObject } from "react";
 import type { GameDocumentBuffer, GameProject, GameWorkspaceFile } from "./game-workspace-types.js";
 export interface GameDocumentEditor {
     readonly selected: string | undefined;
@@ -15,10 +15,14 @@ export interface GameDocumentEditor {
     readonly onRememberPosition: () => void;
     readonly onRetry: () => void;
 }
-export declare function GameDocuments({ project, files, editor, onChat }: {
+export declare function GameDocuments({ project, files, editor, onChat, fileReadError, onRetryRead, resolveImageSrc, justSaved }: {
     readonly project: GameProject;
     readonly files: readonly GameWorkspaceFile[];
     readonly editor: GameDocumentEditor;
     readonly onChat: (prompt: string) => void;
+    readonly fileReadError?: string | null | undefined;
+    readonly onRetryRead?: (() => void) | undefined;
+    readonly resolveImageSrc?: ((src: string, basePath?: string) => string | undefined) | undefined;
+    readonly justSaved?: boolean | undefined;
 }): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=game-documents.d.ts.map

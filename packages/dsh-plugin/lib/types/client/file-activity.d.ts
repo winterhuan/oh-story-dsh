@@ -54,6 +54,8 @@ export declare function openTurn(chat: ChatSnapshot): number | undefined;
 /** Convert a DSH tool path to the creative-relative path accepted by the narrow route. */
 export declare function creativeRelativePath(path: string | undefined, cwd: string | undefined): string | undefined;
 export declare function workbenchModeForPath(path: string | undefined): WorkbenchMode | undefined;
+/** Human-facing Chinese label for a creative workspace file activity (Video v0.8.0 / Story v0.11.0 / Drama v0.13.0 / Game v0.9.0). */
+export declare function fileActivityLabel(path: string | undefined): string | undefined;
 /**
  * The workbench to show when a Session first opens a workspace: the current one when it has
  * work, otherwise the first of 小说, 短剧, 游戏, 视频 that does.
@@ -61,6 +63,17 @@ export declare function workbenchModeForPath(path: string | undefined): Workbenc
 export declare function initialWorkbenchMode(current: WorkbenchMode, files: readonly WorkspaceFilePath[], games: readonly unknown[], videos: readonly unknown[]): WorkbenchMode;
 /** Choose the first useful document when a creative workbench opens. */
 export declare function preferredWorkbenchFile(files: readonly WorkspaceFilePath[], mode: WorkbenchMode): string | undefined;
+export interface AdjacentStoryChapters {
+    readonly prev?: string | undefined;
+    readonly next?: string | undefined;
+    readonly index?: number | undefined;
+    readonly total?: number | undefined;
+}
+/**
+ * Find the previous and next `.md` chapter inside the same story `正文/` directory
+ * (supports both root `正文/` and multi-book `{书名}/正文/`), sorted with Chinese natural order.
+ */
+export declare function adjacentStoryChapters(files: readonly WorkspaceFilePath[], selected?: string): AdjacentStoryChapters;
 /** Project one streamed mutation over its immediate predecessor. */
 export declare function previewMutation(activity: FileMutationActivity, base: string): string | undefined;
 export {};

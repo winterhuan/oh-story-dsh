@@ -3,7 +3,7 @@ export type ProductionJobStatus = "awaiting_confirmation" | "pending" | "running
 export interface ProductionMediaVersion {
     readonly id: string;
     readonly targetId: string;
-    readonly kind: "image" | "video";
+    readonly kind: "image" | "video" | "audio";
     readonly url: string;
     /** Workspace-relative path when the result is owned by the DSH FileSystem. */
     readonly path?: string | undefined;
@@ -82,7 +82,21 @@ export declare function referencesForTarget(targetId: string, production: {
     readonly shots: readonly {
         readonly id: string;
         readonly references: readonly string[];
+        readonly motion?: {
+            readonly id: string;
+        } | undefined;
+        readonly group?: {
+            readonly id: string;
+        } | undefined;
     }[];
+    readonly motions?: readonly {
+        readonly id: string;
+        readonly shotId?: string | undefined;
+    }[] | undefined;
+    readonly groups?: readonly {
+        readonly id: string;
+        readonly memberShotIds: readonly string[];
+    }[] | undefined;
 }, versions: readonly ProductionMediaVersion[], selections: Readonly<Record<string, string>>, libraryVersions?: readonly ProductionMediaVersion[], manualReferences?: Readonly<Record<string, readonly string[]>>): ProductionMediaVersion[];
 export declare function mediaBelongsToEpisode(path: string | undefined, episodeDirectory: string): boolean;
 export declare function sequenceSourceEligible(shotId: string, version: ProductionMediaVersion): boolean;

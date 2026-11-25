@@ -1,23 +1,5 @@
-export interface VideoPreflight {
-    readonly python: {
-        readonly ok: boolean;
-        readonly version?: string;
-        readonly minimum: string;
-    };
-    readonly ffmpeg: {
-        readonly ok: boolean;
-        readonly subtitles: boolean;
-    };
-    readonly ffprobe: {
-        readonly ok: boolean;
-    };
-    readonly credentials: {
-        readonly mimo: boolean;
-        readonly fish: boolean;
-        readonly indexTts: boolean;
-        readonly ttsProvider: string;
-    };
-}
+import type { VideoPreflightStatus } from "../workspace-route.js";
+export type VideoPreflight = VideoPreflightStatus;
 /** The host-process readiness rows; values never leave the process, only whether each is set. */
 export declare function VideoEnvironmentReport({ preflight }: {
     readonly preflight: VideoPreflight;

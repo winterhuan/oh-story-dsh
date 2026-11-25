@@ -1,7 +1,15 @@
+export declare function isSafeImageSrc(src: string): boolean;
+export type ImageSrcResolver = (src: string, basePath?: string) => string | undefined;
 type Alignment = "left" | "center" | "right" | undefined;
-interface ListItem {
+export interface MarkdownListItem {
     readonly text: string;
     readonly checked?: boolean;
+    readonly children?: readonly MarkdownListBlock[];
+}
+export interface MarkdownListBlock {
+    readonly kind: "ul" | "ol";
+    readonly items: readonly MarkdownListItem[];
+    readonly start?: number;
 }
 export type MarkdownBlock = {
     readonly kind: "code";
@@ -14,11 +22,7 @@ export type MarkdownBlock = {
 } | {
     readonly kind: "quote";
     readonly lines: readonly string[];
-} | {
-    readonly kind: "ul" | "ol";
-    readonly items: readonly ListItem[];
-    readonly start?: number;
-} | {
+} | MarkdownListBlock | {
     readonly kind: "table";
     readonly headers: readonly string[];
     readonly rows: readonly (readonly string[])[];
@@ -30,9 +34,10 @@ export type MarkdownBlock = {
     readonly lines: readonly string[];
 };
 export declare function parseMarkdownBlocks(markdown: string): MarkdownBlock[];
-export declare function MarkdownPreview({ content, label }: {
+export declare function MarkdownPreview({ content, label, resolveImageSrc }: {
     readonly content: string;
     readonly label: string;
+    readonly resolveImageSrc?: ImageSrcResolver | undefined;
 }): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=markdown-preview.d.ts.map

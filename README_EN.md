@@ -1,6 +1,6 @@
 > This fork publishes `@winterhuan/oh-story-dsh`. Install from `packages/dsh-plugin` at the fixed source tag below; maintainers run `pnpm build` and commit the output with the source. Original upstream: [zenstory-ai/oh-story-dsh](https://github.com/zenstory-ai/oh-story-dsh).
 
-<!-- Last synced with README.md: 2026-11-21 -->
+<!-- Last synced with README.md: 2026-11-25 -->
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/zenstory-ai/zenstory/main/apps/web/public/brand/zenstory-ai-mark.svg" alt="ZenStory AI" width="76" height="76">
@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="https://github.com/zenstory-ai/oh-story-dsh/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/zenstory-ai/oh-story-dsh?style=flat-square&color=22D3EE&logo=github&logoColor=white&label=Stars"></a>
-  <img alt="Version 0.1.31" src="https://img.shields.io/badge/version-0.1.31-081431?style=flat-square">
+  <img alt="Version 0.1.32" src="https://img.shields.io/badge/version-0.1.32-081431?style=flat-square">
   <img alt="Workbenches 4" src="https://img.shields.io/badge/Workbenches-4-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
@@ -37,25 +37,25 @@
 
 | Workbench | Bundled skill suite (pinned per release) | Main entry points |
 | --- | --- | --- |
-| **Novel** | [Oh Story 0.10.5](https://github.com/zenstory-ai/oh-story-claudecode/releases/tag/v0.10.5) · 13 Skills · 7 Roles | `/story`, `/story-long-write`, `/story-review`, `/story-publish` |
-| **Short drama** | [Drama Skills 0.12.1](https://github.com/zenstory-ai/drama-skills/releases/tag/v0.12.1) · 12 Skills | `/short-drama`, `/short-drama-write`, `/short-drama-storyboard`, `/short-drama-edit` |
+| **Novel** | [Oh Story 0.11.0](https://github.com/zenstory-ai/oh-story-claudecode/releases/tag/v0.11.0) · 13 Skills · 7 Roles | `/story`, `/story-long-write`, `/story-review`, `/story-publish` |
+| **Short drama** | [Drama Skills 0.13.0](https://github.com/zenstory-ai/drama-skills/releases/tag/v0.13.0) · 12 Skills | `/short-drama`, `/short-drama-write`, `/short-drama-storyboard`, `/short-drama-edit` |
 | **Interactive game** | [NovelToGame 0.9.0](https://github.com/zenstory-ai/novel-to-game/releases/tag/v0.9.0) · 5 Skills | `/novel-to-game quick`, `/game-build`, `/game-qa` |
-| **Video recap** | [video-recap-skills 0.7.1](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.7.1) · 2 Skills | `/video-recap`, `/video-reference` |
+| **Video recap** | [video-recap-skills 0.8.0](https://github.com/zenstory-ai/video-recap-skills/releases/tag/v0.8.0) · 2 Skills | `/video-recap`, `/video-reference` |
 
-> Current version: **v0.1.31**, paired by default with DeepSeek Harness `0.2.2-rc.1` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.3`. See [CHANGELOG.md](CHANGELOG.md), the [plugin market](https://winterhuan.github.io/dsh-creative/index.json), and [Upgrading](#what-do-i-do-after-upgrading) for version and migration notes.
+> Current version: **v0.1.32**, paired by default with DeepSeek Harness `0.2.2-rc.5` (Node.js 24.9+) and also compatible with `0.2.1-rc.5`, `0.2.0-rc.2`, and `0.2.2-rc.1`. See [CHANGELOG.md](CHANGELOG.md), the [plugin market](https://winterhuan.github.io/dsh-creative/index.json), and [Upgrading](#what-do-i-do-after-upgrading) for version and migration notes.
 
 ## Installation
 
-Paired by default with DSH `0.2.2-rc.1` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
+Paired by default with DSH `0.2.2-rc.5` on **Node.js 24.9+** (the command brings a temporary `pnpm`, so nothing else needs to be installed globally):
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin" &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 Keep the terminal open; if the browser does not launch automatically, open the full `http://127.0.0.1:3080/?token=...` URL printed in the terminal (first-time login uses the `token` query parameter). Add a provider and API key under **Settings → Models** or export `DEEPSEEK_API_KEY` before launching; to browse local projects without an API key, click **Configure later** in the first-run guide.
 
-Use the **same DSH version** for both `plugin add` and `web` (`>=0.2.0-rc.2 <0.2.1-0`, `>=0.2.1-alpha.1 <0.2.2-0`, and `>=0.2.2-alpha.2 <0.2.3-0` are supported; update both commands together if you run `0.2.1-rc.5`, `0.2.0-rc.2`, or `0.2.2-rc.3`).
+Use the **same DSH version** for both `plugin add` and `web` (`>=0.2.0-rc.2 <0.2.1-0`, `>=0.2.1-alpha.1 <0.2.2-0`, and `>=0.2.2-alpha.2 <0.2.3-0` are supported; update both commands together if you run `0.2.1-rc.5` or `0.2.0-rc.2`).
 
 <details>
 <summary>Configure short-drama media APIs (images / video / speech / music)</summary>
@@ -64,16 +64,16 @@ DeepSeek writes the screenplay, storyboard, and prompts; `short-drama-produce` c
 
 | Modality | Vendor | Required variables | Optional variables |
 | --- | --- | --- | --- |
-| Images | GPT Image 2 | `OPENAI_API_KEY` | `OPENAI_BASE_URL` |
+| Images | OpenAI Image (`openai-image`) | `OPENAI_API_KEY` | `OPENAI_IMAGE_MODEL` (or job `parameters.model`), `OPENAI_BASE_URL` |
 | Video | Seedance (Volcengine Ark) | `ARK_API_KEY`, `SEEDANCE_MODEL` | `SEEDANCE_BASE_URL`, `SEEDANCE_POLL_INTERVAL`, `SEEDANCE_TIMEOUT_SECONDS`, `SEEDANCE_ALLOWED_RATIOS`, `SEEDANCE_MIN_DURATION` / `SEEDANCE_MAX_DURATION` |
 | Video | MiniMax H3 | `MINIMAX_API_KEY`, `MINIMAX_VIDEO_MODEL` | `MINIMAX_VIDEO_BASE_URL`, `MINIMAX_VIDEO_POLL_INTERVAL`, `MINIMAX_VIDEO_TIMEOUT_SECONDS`, `MINIMAX_VIDEO_ALLOWED_RESOLUTIONS`, `MINIMAX_VIDEO_ALLOWED_RATIOS`, `MINIMAX_VIDEO_MIN_DURATION` / `MINIMAX_VIDEO_MAX_DURATION` |
 | Speech | MiniMax Speech | `MINIMAX_API_KEY` | `MINIMAX_BASE_URL` |
-| Music | MiniMax Music | `MINIMAX_API_KEY` | `MINIMAX_BASE_URL` |
+| Music | MiniMax Music | `MINIMAX_API_KEY` | `MINIMAX_MUSIC_MODEL` (or job `parameters.model`), `MINIMAX_BASE_URL` |
 
 ```bash
 export OPENAI_API_KEY=...
 export ARK_API_KEY=... SEEDANCE_MODEL=...
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 **Production details** shows which vendors are ready and which variables are missing (checking presence only, never reading or returning secret values). The built-in `seedance` and `minimax-h3` profiles accept character voice references (`reference_audio`) by default; confirm that your configured model supports audio input. For custom adapters, timeouts, or external `reference_roles`, point `OH_STORY_DRAMA_ADAPTER_CONFIG` at your config file. See the bundled `short-drama-produce/references/builtin-providers.md` for parameter limits.
@@ -83,7 +83,7 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 <details>
 <summary>Local dependencies for the video-recap workbench (Python / ffmpeg)</summary>
 
-The video pipeline requires **Python 3.10+** and **ffmpeg / ffprobe** on `PATH` (for example `sudo apt install ffmpeg` on Debian/Ubuntu), plus `MIMO_API_KEY` in the launch terminal; add `FISH_API_KEY` if you use Fish Audio TTS. When `ffmpeg` includes `libass`, subtitles are burned into the video; otherwise an external SRT file is produced.
+Video Recap 0.8.0 is local-first and only requires **Python 3.10+** and **ffmpeg / ffprobe** on `PATH` (for example `sudo apt install ffmpeg` on Debian/Ubuntu). For optional cloud ASR or TTS, export `ASR_API_URL` / `ASR_API_KEY`, `FISH_API_KEY` (or `FISH_AUDIO_API_KEY`), `OPENAI_API_KEY`, or self-hosted `INDEX_TTS_ENDPOINT`. When `ffmpeg` includes `libass`, subtitles are burned into the video.
 
 </details>
 
@@ -93,7 +93,7 @@ The video pipeline requires **Python 3.10+** and **ffmpeg / ffprobe** on `PATH` 
 Bundled Skills load in any session preset that enables the skill tool (`Standard` or `PTC`; `Minimal` skips skills). To leave your default `web` profile untouched, install into a separate `story` profile:
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.31&path:/packages/dsh-plugin"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
 ```
 
 Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the plugin:
@@ -109,8 +109,8 @@ Then edit `~/.dsh/profiles/story/package.json` so DSH's Web UI loads before the 
 Run both profiles side by side on different ports while sharing models, workspaces, and session history:
 
 ```bash
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web                          # stock DSH
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081  # creation workbenches
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web                          # stock DSH
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 --profile story --port 3081  # creation workbenches
 ```
 
 </details>

@@ -6,8 +6,8 @@ on:
   pull_request:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -76,5 +76,7 @@ jobs:
       - name: Install Chrome for the official DSH Web smoke
         run: pnpm exec playwright install --with-deps chrome
       - run: pnpm test:dsh
-      - name: Verify npm latest DSH compatibility
+      - name: Verify oldest supported DSH compatibility
         run: pnpm test:dsh:rc
+      - name: Verify previous default DSH compatibility
+        run: pnpm test:dsh:previous

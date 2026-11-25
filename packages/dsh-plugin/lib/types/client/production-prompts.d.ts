@@ -12,6 +12,16 @@ export declare function nativeBatchPrompt(production: DramaEpisodeProduction, jo
  * them with a production job. An external mix ends with the loudnorm pass render itself runs
  * (edit_tool.py `_loudnorm_filter`, then AAC 192k at 48 kHz).
  */
+export declare function nativeVisualImagePromptRequest(production: DramaEpisodeProduction, visual: {
+    readonly id: string;
+    readonly title: string;
+    readonly path?: string | undefined;
+}): string;
+export declare function nativeMusicProductionPrompt(production: DramaEpisodeProduction, music: {
+    readonly id: string;
+    readonly title: string;
+    readonly prompt?: string | undefined;
+}): string;
 export declare function nativeCompositionPrompt(production: DramaEpisodeProduction, job: ProductionJob, orderedSources: readonly {
     readonly shotId: string;
     readonly sourceId: string;
