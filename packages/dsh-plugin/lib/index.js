@@ -19,19 +19,66 @@ import { createHash } from "node:crypto";
 import { access, lstat, mkdir, rename, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname as dirname2, join, resolve as resolve2 } from "node:path";
+var ADAPTER_OPTIONAL_ENV_NOTES = {
+  "openai-image": [
+    {
+      name: "OPENAI_IMAGE_MODEL",
+      label: "\u9ED8\u8BA4\u56FE\u7247\u6A21\u578B",
+      note: "Drama 0.13.0 \u4E0D\u518D\u786C\u7F16\u7801\u6A21\u578B\u7248\u672C\uFF1B\u672A\u8BBE\u7F6E\u65F6\u987B\u5728\u4EFB\u52A1 parameters.model \u4E2D\u663E\u5F0F\u6307\u5B9A\u6A21\u578B ID\u3002"
+    },
+    {
+      name: "OPENAI_BASE_URL",
+      label: "\u63A5\u53E3\u5730\u5740\u8986\u76D6",
+      note: "\u53EF\u9009 HTTPS \u5730\u5740\u8986\u76D6\uFF0C\u9ED8\u8BA4 https://api.openai.com/v1\u3002"
+    }
+  ],
+  seedance: [
+    {
+      name: "SEEDANCE_BASE_URL",
+      label: "\u63A5\u53E3\u5730\u5740\u8986\u76D6",
+      note: "\u53EF\u9009\uFF0C\u9ED8\u8BA4 https://ark.cn-beijing.volces.com/api/v3\u3002"
+    }
+  ],
+  "minimax-h3": [
+    {
+      name: "MINIMAX_VIDEO_BASE_URL",
+      label: "\u56FD\u5185/\u6D77\u5916\u7AD9\u5730\u5740",
+      note: "\u9ED8\u8BA4\u6D77\u5916\u7AD9 https://api.minimax.io/v2\uFF1B\u56FD\u5185\u7AD9\u8D26\u53F7\u8BF7\u8BBE\u4E3A https://api.minimaxi.com/v2\u3002"
+    }
+  ],
+  "minimax-music": [
+    {
+      name: "MINIMAX_MUSIC_MODEL",
+      label: "\u9ED8\u8BA4\u97F3\u4E50\u6A21\u578B",
+      note: "Drama 0.13.0 \u4E0D\u518D\u786C\u7F16\u7801\u6A21\u578B\u7248\u672C\uFF1B\u672A\u8BBE\u7F6E\u65F6\u987B\u5728\u4EFB\u52A1 parameters.model \u4E2D\u663E\u5F0F\u6307\u5B9A\u6A21\u578B ID\u3002"
+    },
+    {
+      name: "MINIMAX_BASE_URL",
+      label: "\u56FD\u5185/\u6D77\u5916\u7AD9\u5730\u5740",
+      note: "\u9ED8\u8BA4\u6D77\u5916\u7AD9 https://api.minimax.io/v1\uFF1B\u56FD\u5185\u7AD9\u8D26\u53F7\u8BF7\u8BBE\u4E3A https://api.minimaxi.com/v1\u3002"
+    }
+  ],
+  "minimax-speech": [
+    {
+      name: "MINIMAX_BASE_URL",
+      label: "\u56FD\u5185/\u6D77\u5916\u7AD9\u5730\u5740",
+      note: "\u9ED8\u8BA4\u6D77\u5916\u7AD9 https://api.minimax.io/v1\uFF1B\u56FD\u5185\u7AD9\u8D26\u53F7\u8BF7\u8BBE\u4E3A https://api.minimaxi.com/v1\u3002"
+    }
+  ]
+};
 var DRAMA_ADAPTER_CONFIG_ENV = "OH_STORY_DRAMA_ADAPTER_CONFIG";
 var PROVIDER_SCRIPT = "short-drama-produce/scripts/provider_adapters.py";
 var BUILTIN_PROVIDERS_REFERENCE = "short-drama-produce/references/builtin-providers.md";
 var DRAMA_ADAPTERS = [
   {
-    name: "gpt-image-2",
-    label: "GPT Image 2",
+    name: "openai-image",
+    label: "OpenAI Image",
     modality: "image",
     requiredEnv: ["OPENAI_API_KEY"],
-    optionalEnv: ["OPENAI_BASE_URL"],
+    optionalEnv: ["OPENAI_IMAGE_MODEL", "OPENAI_BASE_URL"],
     timeoutSeconds: 600,
     reference: BUILTIN_PROVIDERS_REFERENCE,
-    referenceHeading: "GPT Image 2"
+    referenceHeading: "OpenAI \u56FE\u7247\uFF08GPT Image\uFF09"
   },
   {
     name: "seedance",
@@ -75,7 +122,7 @@ var DRAMA_ADAPTERS = [
     label: "MiniMax Music",
     modality: "music",
     requiredEnv: ["MINIMAX_API_KEY"],
-    optionalEnv: ["MINIMAX_BASE_URL"],
+    optionalEnv: ["MINIMAX_MUSIC_MODEL", "MINIMAX_BASE_URL"],
     timeoutSeconds: 600,
     reference: BUILTIN_PROVIDERS_REFERENCE,
     referenceHeading: "MiniMax \u97F3\u4E50"
@@ -91,6 +138,9 @@ var DRAMA_ADAPTERS = [
     referenceHeading: "MiniMax \u8BED\u97F3"
   }
 ];
+var DRAMA_ADAPTER_ALIASES = {
+  "gpt-image-2": "openai-image"
+};
 function generatedDirectory(temporaryRoot) {
   const uid = process.getuid?.();
   return join(temporaryRoot, uid === void 0 ? "oh-story-dsh" : `oh-story-dsh-${String(uid)}`);
@@ -113,6 +163,12 @@ function dramaAdapterConfigDocument(skillRoot, python = "python3") {
   const adapters = {};
   for (const adapter of DRAMA_ADAPTERS) {
     adapters[adapter.name] = { command: [python, script, adapter.name], timeout_seconds: adapter.timeoutSeconds };
+  }
+  for (const [alias, canonical] of Object.entries(DRAMA_ADAPTER_ALIASES)) {
+    const target2 = DRAMA_ADAPTERS.find((adapter) => adapter.name === canonical);
+    if (target2 !== void 0) {
+      adapters[alias] = { command: [python, script, alias], timeout_seconds: target2.timeoutSeconds };
+    }
   }
   return { adapters };
 }
@@ -137,7 +193,21 @@ async function ensureDramaAdapterConfig(skillRoot, options = {}) {
 function dramaAdapterStatuses(env = process.env) {
   return DRAMA_ADAPTERS.map((adapter) => {
     const missing = adapter.requiredEnv.filter((name2) => (env[name2] ?? "") === "");
-    return { name: adapter.name, label: adapter.label, modality: adapter.modality, configured: missing.length === 0, missing };
+    const descriptors = ADAPTER_OPTIONAL_ENV_NOTES[adapter.name];
+    const optionalEnv = descriptors?.map((item) => ({
+      name: item.name,
+      label: item.label,
+      configured: (env[item.name] ?? "") !== "",
+      note: item.note
+    }));
+    return {
+      name: adapter.name,
+      label: adapter.label,
+      modality: adapter.modality,
+      configured: missing.length === 0,
+      missing,
+      ...optionalEnv === void 0 ? {} : { optionalEnv }
+    };
   });
 }
 function dramaAdapterSummary() {
@@ -164,15 +234,15 @@ var DSH_SKILL_BRIDGE = [
   // Upstream deploys these 「与作者协作」 rules only in its CLAUDE.md/AGENTS.md
   // templates, which DSH does not install.
   "Working with the author: reply in the language the author writes in, and keep progress updates in that language while you wait for oh_story_role or any other background helper to return; reply and report in the author's writing terms (book, chapter, outline, settings), never in script, field, or state names; attach a raw error only when something failed. A template block marked <!-- author-report --> is only a format reference: output its text directly, without that marker and without a code fence.",
-  "Manage a writing habit or preference only through story-long-write or story-short-write and that writing Skill's references/author-memory.md and scripts/author_memory_commit.py; never keep it in a host or DSH memory. The story entry only routes memory requests. story-deslop and story-review consume only preferences already supplied by their caller and never query or record author memory themselves. Simply follow a one-off request without recording it.",
+  "Manage a writing habit or preference only through story-long-write or story-short-write and that writing Skill's references/author-memory.md and scripts/author_memory_commit.js; never keep it in a host or DSH memory. The story entry only routes memory requests. story-deslop and story-review consume only preferences already supplied by their caller and never query or record author memory themselves. Simply follow a one-off request without recording it.",
   "Never edit the bundled Skill files (SKILL.md, references/, scripts/). When a Skill script fails, stop and show the author the command you ran and its error instead of patching or working around it.",
   "</oh-story-dsh-integration>"
 ].join("\n");
 var DSH_ANALYSIS_BATCHES = [
   "Stage 2 batches in DSH: dispatch each planned batch with oh_story_role, role chapter-extractor, and a self-contained prompt that copies this batch's plan fields verbatim, prefixing paths with {\u62C6\u6587\u76EE\u5F55}/: batch_id, input_kind, source_files (per-chapter source_locator for a raw batch), chapter_chars, min_plot_points, the output file {\u62C6\u6587\u76EE\u5F55}/_analysis_cache/\u8F93\u5165-{\u6279\u6B21ID}.md, and the plan's handoff_cache when it is not empty.",
   "The extractor reads the source itself, writes or edits only that batch input file (DSH denies any other write or edit by a chapter-extractor child), and replies with one receipt line; do not read the file yourself.",
-  "Commit it with manage_analysis_run.py commit, one commit at a time in this session. When a commit is rejected, dispatch the same batch to a chapter-extractor again with every field above plus the error code, and have it fix only the broken spots with edit (rewriting the whole file only when its structure is broken), then commit again.",
-  "Run manage_analysis_run.py and the other bundled Python 3 scripts through the current DSH execution world, trying python3, python, then py -3. If none is available, stop and tell the author in plain words that this step needs Python 3 on the machine running DSH; never simulate a script's output or hand-write the files it owns.",
+  "Commit it with manage_analysis_run.js commit, one commit at a time in this session. When a commit is rejected, dispatch the same batch to a chapter-extractor again with every field above plus the error code, and have it fix only the broken spots with edit (rewriting the whole file only when its structure is broken), then commit again.",
+  "Run manage_analysis_run.js and the other bundled Node.js scripts through the current DSH execution world with Node.js 18+ (Python 3 is only needed for the optional render_relation_chart.py). If node is unavailable, stop and tell the author in plain words that this step needs Node.js 18+ on the machine running DSH; never simulate a script's output or hand-write the files it owns.",
   "Keep concurrent oh_story_role calls modest. The default is upstream's \u6709\u9650\u5E76\u884C tier: three batches per round, issued together, the next round only after all three are committed; an unasked, full, multi-book, or import run uses it. DSH runs calls from one step in parallel only up to the host's own limit and may run them one after another, so never promise more. Use \u4E32\u884C or \u4E0D\u9650\u6279\u6B21\u987A\u5E8F only when the author chooses it, and under \u4E0D\u9650\u6279\u6B21\u987A\u5E8F halve the count on any rate limit, timeout, or child error."
 ].join(" ");
 var DSH_AUTHOR_MEMORY_WORKSPACE = "For author memory in DSH's usual single-book layout, where \u6B63\u6587/ and \u8BBE\u5B9A/ sit directly in the workspace root, pass that same root as both --workspace and --book-root; the book store lives at .story/\u4F5C\u8005\u8BB0\u5FC6/\u4E66\u7EA7/. For a book in a subdirectory, --book-root names that book's directory. Keep --workspace explicit, pass --book-root on every command for a book, and include --kind on queries. This writing Skill's references/author-memory.md also covers organizing memories and migrating old \u672C\u4E66\uFF1A entries.";
@@ -180,9 +250,9 @@ var DSH_SKILL_OVERRIDES = {
   story: "The \u5C0F\u8BF4 workspace is an official DSH conversation view. Never start or open a second web application.",
   "story-setup": "Initialize or validate novel project data only. DSH already supplies Skills, Roles, hooks, tools, permissions, sessions, and UI; never deploy Claude/OpenCode/Codex/Antigravity/ZCode/OpenClaw/Reasonix files or a .story-deployed marker.",
   "story-long-analyze": `Use oh_story_role for chapter extraction or specialist analysis. Never inspect platform agent directories or require a deployed external Agent definition. ${DSH_ANALYSIS_BATCHES}`,
-  "story-long-write": `All named Roles are provided through oh_story_role. Do not check platform agent files. Keep the upstream writing, Tracking, lint, outline, revision, and quality workflows. Create and assemble \u6B63\u6587/ chapter files only with the write and edit tools, never through shell redirection, cp, mv, tee, or a script, so that DSH's outline guard, its Tracking reminder, and the \u5C0F\u8BF4 view observe the write; upstream's own in-place chapter fixes such as storyctl.py chapter check --fix-punctuation stay as upstream describes. ${DSH_AUTHOR_MEMORY_WORKSPACE}`,
+  "story-long-write": `All named Roles are provided through oh_story_role. Do not check platform agent files. Keep the upstream writing, Tracking, lint, outline, revision, and quality workflows. Create and assemble \u6B63\u6587/ chapter files only with the write and edit tools, never through shell redirection, cp, mv, tee, or a script, so that DSH's outline guard, its Tracking reminder, and the \u5C0F\u8BF4 view observe the write; upstream's own in-place chapter fixes such as storyctl.js chapter check --fix-punctuation stay as upstream describes. ${DSH_AUTHOR_MEMORY_WORKSPACE}`,
   "story-review": "All named reviewer Roles are provided through oh_story_role. Do not check platform agent files; full/lean review may use the bundled Roles directly. When a review falls back to solo in DSH, the reason is that oh_story_role or DSH's spawn runtime is unavailable in this Session (Fallback agent tool unavailable -> solo) or a Role run failed (Fallback spawn failed -> solo); say that in one plain sentence. Never tell the author that the reviewers are not installed, missing, or outdated, and never tell them to run /story-setup.",
-  "story-import": `All named Roles are provided through oh_story_role. Do not require story-setup to deploy them, never inspect platform agent directories or .story-deployed, and never offer the author Step 4's choice to install a writing environment with /story-setup: in DSH record \u5199\u4F5C\u73AF\u5883 in .story/work/\u5BFC\u5165\u8BB0\u5F55.md as installed, with the analysis helper and story-architect both available. Phase 2 runs the story-long-analyze pipeline the DSH way below; an import counts as automatic continuation, so it uses the limited-parallel tier without asking. ${DSH_ANALYSIS_BATCHES} Run the scripts this Skill needs (build_outline_brief.py, outline_view.py --check --strict, tracking_commit.py init and check with Python 3; check-outline-contract.js with Node) the same way. Keep upstream's order: in the long-form structure migration (references/structure-mapping-long.md) Step 2 copies the manuscript into \u6B63\u6587/, Step 10 reverse-builds the \u7EC6\u7EB2 in batches, and Phase 4 initialises Tracking. After the import, tell the author to continue a long book with /story-long-write \u5199\u7B2CN\u7AE0 (N is the next chapter after the imported ones) and a short story with /story-short-write by asking it to \u8865\u5B8C\u6784\u601D. DSH's prose guard mirrors the outline gate of upstream proseBlockReason for books with \u5927\u7EB2/ or \u8FFD\u8E2A/, so open an import window before Step 2 copies any chapter: create .story/work/\u5BFC\u5165\u4E2D.md in the book directory (the workspace root in DSH's usual single-book layout) with one line naming the book being imported, and delete it right after Phase 4's tracking_commit.py init and check both succeed. The window only holds while \u8FFD\u8E2A/_tracking-state.json is absent. \u5BFC\u5165\u4E2D.md is DSH's own marker; keep upstream's \u5BFC\u5165\u8BB0\u5F55.md exactly as the Skill describes.`,
+  "story-import": `All named Roles are provided through oh_story_role. Do not require story-setup to deploy them, never inspect platform agent directories or .story-deployed, and never offer the author Step 4's choice to install a writing environment with /story-setup: in DSH record \u5199\u4F5C\u73AF\u5883 in .story/work/\u5BFC\u5165\u8BB0\u5F55.md as installed, with the analysis helper and story-architect both available. Phase 2 runs the story-long-analyze pipeline the DSH way below; an import counts as automatic continuation, so it uses the limited-parallel tier without asking. ${DSH_ANALYSIS_BATCHES} Run the scripts this Skill needs (build_outline_brief.js, outline_view.js --check --strict, tracking_commit.js init and check, check-outline-contract.js with Node) the same way. Keep upstream's order: in the long-form structure migration (references/structure-mapping-long.md) Step 2 copies the manuscript into \u6B63\u6587/, Step 10 reverse-builds the \u7EC6\u7EB2 in batches, and Phase 4 initialises Tracking. After the import, tell the author to continue a long book with /story-long-write \u5199\u7B2CN\u7AE0 (N is the next chapter after the imported ones) and a short story with /story-short-write by asking it to \u8865\u5B8C\u6784\u601D. DSH's prose guard mirrors the outline gate of upstream proseBlockReason for books with \u5927\u7EB2/ or \u8FFD\u8E2A/, so open an import window before Step 2 copies any chapter: create .story/work/\u5BFC\u5165\u4E2D.md in the book directory (the workspace root in DSH's usual single-book layout) with one line naming the book being imported, and delete it right after Phase 4's tracking_commit.js init and check both succeed. The window only holds while \u8FFD\u8E2A/_tracking-state.json is absent. \u5BFC\u5165\u4E2D.md is DSH's own marker; keep upstream's \u5BFC\u5165\u8BB0\u5F55.md exactly as the Skill describes.`,
   "story-deslop": "Use the bundled narrative-writer Role through oh_story_role when specialist review is useful. Never inspect platform agent directories.",
   "story-short-analyze": "Use oh_story_role for specialist analysis. Never inspect platform agent directories or require external Agent deployment.",
   "story-short-write": `All named Roles are provided through oh_story_role. Do not inspect platform agent files; preserve the upstream short-fiction workflow and quality gates. ${DSH_AUTHOR_MEMORY_WORKSPACE}`,
@@ -211,7 +281,7 @@ var DSH_DRAMA_OVERRIDES = {
     // edit_tool.py 0.12.0 `_parse_excused_item`: `- 未采用镜头：` is read before the first `## CUT-`, split on `；`, and each item matches `(MOTION|GROUP|SHOT|IMG)-…（理由：<non-empty>）`.
     "Video cuts use existing MOTION or GROUP IDs; static-frame cuts use SHOT IDs from \u5206\u955C.md or IMG IDs from \u56FE\u7247\u63D0\u793A\u8BCD.md and accepted png/jpg/jpeg/webp files. On full-episode delivery (without --partial), every unused MOTION/GROUP and, when static cuts exist, every storyboard SHOT must be accounted for before the first `## CUT-` on one line: `- \u672A\u91C7\u7528\u955C\u5934\uFF1AMOTION-\u2026\uFF08\u7406\u7531\uFF1A\u2026\uFF09\uFF1BGROUP-\u2026\uFF08\u7406\u7531\uFF1A\u2026\uFF09\uFF1BSHOT-\u2026\uFF08\u7406\u7531\uFF1A\u2026\uFF09`. Join items with a full-width `\uFF1B`; reasons name \u6587\u4EF6\u7F3A\u5931, \u8D28\u91CF\u4E0D\u53EF\u7528 or \u53D9\u4E8B\u53D6\u820D. A static CUT starts at 0.00, has a two-frame floor (0.08s at 24fps; shorter than 0.50s raises a check reminder), requires the delivery width/height/frame rate, and may use \u8FD0\u955C. Reusing overlapping source video ranges requires an explicit `- \u91CD\u653E\uFF1A<\u53D9\u4E8B\u7406\u7531>` line in that CUT. The native production sequence accepts video and accepted keyframe images, keeps storyboard order and source identity, and dispatches /short-drama-edit in Chat; never relabel images as video or generate paid video unnecessarily.",
     "Same-aspect-ratio video clips whose resolution or frame rate differs from the delivery spec raise a check reminder and are automatically scaled and frame-rate-converted by render. Static cuts are rendered to the delivery specification with the declared crop/motion. When check blocks on a mismatched aspect ratio (such as landscape mixed into vertical), normalise the odd clips to the delivery spec with ffmpeg in the DSH execution world, under approval, preserving the composition. Write them under \u5267\u96C6/<EP>/\u5236\u4F5C\u6210\u679C/\u6210\u7247/\u89C4\u683C\u7EDF\u4E00/, an edit-owned intermediate, never beside the produce-stage originals and never over produced footage, and name them without the original's job-id token (the MOTION or GROUP ID will do). Record the crop or pad in that CUT's block (not in its \u753B\u9762 line, which accepts only \u4EAE\u5EA6/\u9971\u548C/\u8272\u6E29), point \u6765\u6E90 at the new file, update \u5165\u70B9/\u51FA\u70B9 if the conversion moved them, and rerun check.",
-    "The default burned-subtitle route needs an ffmpeg built with libass; when the host's ffmpeg lacks it, say so instead of silently dropping subtitles. Remotion renders every frame through a headless browser from a Node workspace outside the project, ~/.cache/short-drama-edit/remotion, which edit_tool.py rewrites on each run: the optional subtitle route uses it, and any `\u753B\u9762\u6587\u5B57` line in \u526A\u8F91\u5355.md requires it whatever the subtitle route. Install it (npm install in that workspace; an install from before Drama Skills 0.8 must run npm install again) only after the creator approves, through DSH approval. Without that approval write no \u753B\u9762\u6587\u5B57 lines and tell the creator the blank on-screen panels stay empty. Never treat Remotion as a second Agent runtime, dashboard, or session transport.",
+    "The default burned-subtitle route and the ffmpeg fallback for plain \u5B57\u5361 overlays need an ffmpeg built with libass; when the host's ffmpeg lacks it, say so instead of silently dropping subtitles. Remotion renders every frame through a headless browser from a Node workspace outside the project, ~/.cache/short-drama-edit/remotion, which edit_tool.py rewrites on each run: the optional Remotion subtitle route and complex \u753B\u9762\u6587\u5B57 panels (\u5361\u7247/\u7CFB\u7EDF\u9762\u677F/\u4EFB\u52A1\u9762\u677F/\u89D2\u6807) use it unless skipped with --screen-text-mode off or routed to --overlay-renderer; plain \u5B57\u5361 falls back to ffmpeg ASS under --screen-text-mode auto when Node/Remotion is unavailable. Install Remotion (npm install in that workspace; an install from before Drama Skills 0.8 must run npm install again) only after the creator approves, through DSH approval. Without that approval, stick to plain \u5B57\u5361 (with libass), use --screen-text-mode off, or leave complex panels unwritten and tell the creator. Never treat Remotion as a second Agent runtime, dashboard, or session transport.",
     "The \u58F0\u97F3 line in \u526A\u8F91\u5355.md is a record, not an instruction the built-in render executes. render trims, scales/converts same-aspect-ratio clips to the delivery spec, auto-matches adjacent cuts within one scene (a CUT's \u753B\u9762 correction replaces it, `- \u753B\u9762\uFF1A\u4E0D\u6821` skips it, and `- \u63A5\u955C\u5339\u914D\uFF1A\u65E0` in the delivery spec turns it off), hard-joins, mixes in the `\u97F3\u6548` lines, cross-cut `\u914D\u97F3` and looping `\u73AF\u5883\u58F0`, burns subtitles and \u753B\u9762\u6587\u5B57, applies optional \u9897\u7C92, and normalises loudness. A mix beyond the declared \u97F3\u6548/\u914D\u97F3/\u73AF\u5883\u58F0 lines, crossfade, transition or format conversion is an external ffmpeg step, run under approval, that writes a temporary file, ends as render does with whole-film two-pass loudnorm to the declared \u4EA4\u4ED8\u54CD\u5EA6 (I=<\u4EA4\u4ED8\u54CD\u5EA6>:TP=<\u771F\u5CF0\u503C\u4E0A\u9650\uFF0C\u9ED8\u8BA4 -1.5>:LRA=11, the second pass fed the first pass's measurements with linear=true, audio re-encoded as AAC 192k at 48 kHz), and only then replaces \u5267\u96C6/<EP>/\u5236\u4F5C\u6210\u679C/\u6210\u7247/\u6210\u7247.mp4; record its command in \u526A\u8F91\u5355.md and repeat it after any re-render, which overwrites that file. Run edit_tool.py verify last, on that delivered file, and report every \u672A\u6D4B item as untested, never as passed.",
     "This stage never generates footage and never edits \u5267\u672C.md, \u5206\u955C.md, or \u89C6\u9891\u63D0\u793A\u8BCD.md \u2014 route those back to their owning Skill."
   ].join(" "),
@@ -241,13 +311,13 @@ var DSH_VIDEO_BRIDGE = [
   "This Skill is a native contribution to the current DeepSeek Harness session.",
   "DSH owns the workspace, model, preset, permissions, Session Log, tools, approvals, cancellation, resume, Todo, Chat, and the \u89C6\u9891 preview Studio.",
   "Never start a second Agent runtime, dashboard, session transport, web server, polling loop, or model configuration.",
-  "A dashboard request means the native \u89C6\u9891 tab in this DSH Session: upstream's dashboard_server.py (its read-only \u5BA1\u7247\u53F0), its dashboard/ package and its assets are not bundled, so never try to run them, even where the Skill says to. To inspect a resource library, use the read-only scripts/library.py check, list, or show. Check the environment with scripts/doctor.py; recap.py --doctor was removed.",
-  "Keep upstream's single self-contained video-recap Skill (understanding, story selection, cutting, narration, TTS and mixing in one) plus the on-demand video-reference Skill; video-reference extracts reusable production references only when requested and never enters the default production path. Put each project under video-recaps/<project>/, copy or import source media under sources/, and use work/ as the upstream work_dir so the Studio can discover authoritative manifests and outputs. A project binding passed with --project belongs at video-recaps/<project>/recap_project.json.",
-  "full-mode validation is lint-only: never truncate, drop, merge or reorder approved narration to satisfy a budget; report over_budget and request a revised script. final_qc.json uses schema 2 findings (code/message/blocking/evidence/next_action); do not read removed golden_eval.json, mimo_qc.json or preflight_qc.json. Do not pass removed flags or variables: --edit-mode dub, --confirm-voice-rights, --audio-mode adopted-packet-copy, --review-narration, --mimo-video-overview, --consolidate, --preserve-approved-text, --mimo-qc, --clip-padding, MIMO_QC*, MIMO_VIDEO_*, CLIP_PADDING or SOURCE_VIDEO. Never set EDIT_MODE or TARGET_DURATION, which recap.py now refuses; pass --edit-mode full|cut and --target-duration instead. A resume command printed by a pre-0.7.0 work_dir may still carry removed flags: drop them rather than retrying it verbatim. recap.py requires a passing final QC by default; when blocking findings stop a run, report each with its next_action and fix the cause, and pass --no-require-final-qc only when the user explicitly asks for an advisory draft. Delivery uses tagged H.264 8-bit 4:2:0 with true peak <= -1 dBTP; delivered_true_peak_over_target blocks delivery. If libass is unavailable, deliver external .srt rather than dropping subtitles or aborting preflight.",
-  "The Video Studio is a preview and artifact surface, not a nonlinear editor. Do not invent a second project-state format, timeline truth, or render queue; recap_run_manifest.json, recap_phase.json, timeline.json, assembly_manifest.json, packaging_plan.json, promo_copy.json, and the upstream artifacts remain authoritative.",
-  "--voice-ref (VOICE_REF) sends the reference recording to MiMo's voice-clone model. Ask the user first and pass it only after they confirm they may use that voice and its speaker consents; never add it on your own.",
-  "MIMO_API_KEY, FISH_API_KEY, and voice credentials stay in the host environment. Never write secrets into project files, tool arguments shown to the browser, or chat output.",
-  "Use only DSH-visible tools and approvals. Run Python and ffmpeg through the current DSH execution world, preserve cancellation, and do not install or upgrade system dependencies without explicit user approval.",
+  "A dashboard request means the native \u89C6\u9891 tab in this DSH Session: upstream's dashboard.py and assets/dashboard.html are not bundled, so never try to run them, even where the Skill says to. To inspect a resource library, use the read-only scripts/library.py commands.",
+  "Keep upstream's single self-contained video-recap Skill (six stateless atomic CLIs: probe.py, frames.py, transcribe.py, tts.py, render.py, check.py plus on-demand packaging.py, export_jianying.py, and library.py) and the on-demand video-reference Skill (analyze_reference.py); video-reference extracts reusable production references only when requested and never enters the default production path. Put each project under video-recaps/<project>/, keep source media under sources/, and use work/ as the upstream work_dir (holding BRIEF.md, MEDIA_NOTES.md, EDIT_PLAN.md, PROMO.md, timeline.json, check.json, media/, and out/) so the Studio can discover authoritative creative docs, manifests, and outputs.",
+  "Video Recap 0.8.0 is local-first and centers on timeline.json v3 and check.json v1: only 100% deterministic physical damage fails check.py (ok: false); black/freeze/silence/audio-edge/overlap findings are soft warnings aggregated in review_hints[] for Agent review, and render.py warns on timing overlaps unless --strict is passed. Never fabricate measurements, speed up TTS audio to fit a window, or silently drop subtitles; confirm target aspect ratio and framing (fit: contain|cover) with the user before planning or rendering. Delivery targets -14 LUFS / -1.5 dBTP with two-pass linear loudnorm.",
+  "The Video Studio is a preview and artifact surface, not a nonlinear editor. Do not invent a second project-state format, timeline truth, or render queue; BRIEF.md, MEDIA_NOTES.md, EDIT_PLAN.md, PROMO.md, timeline.json, check.json, and the upstream artifacts remain authoritative.",
+  "Core tools (probe.py, frames.py, render.py, check.py, export_jianying.py, library.py) never access the network. Remote ASR (ASR_API_URL / ASR_API_KEY) and cloud TTS (FISH_API_KEY / FISH_AUDIO_API_KEY, OPENAI_API_KEY, INDEX_TTS_ENDPOINT) run only when explicitly configured or selected; pass --engine local or --provider srt/embedded/whisper to stay strictly offline. Ask the user for explicit voice-owner consent before cloning a voice and record it in timeline.json meta.voice.consent.",
+  "ASR_API_KEY, FISH_API_KEY, FISH_AUDIO_API_KEY, OPENAI_API_KEY, and voice credentials stay in the host environment. Never write secrets into project files, tool arguments shown to the browser, or chat output.",
+  "Use only DSH-visible tools and approvals. Run Python 3.10+ and ffmpeg/ffprobe through the current DSH execution world, preserve cancellation, and do not install or upgrade system dependencies without explicit user approval.",
   "When a new edited or final video is ready, tell the user that Video Studio can load it; never interrupt playback by replacing the currently loaded video silently.",
   "</video-recap-dsh-integration>"
 ].join("\n");
@@ -262,8 +332,6 @@ var DSH_NATIVE_SKILLS = {
   \u7528\u6237\u660E\u786E\u8981\u6C42\u5199\u6B63\u6587\u624D\u8FDB\u5165\u6B63\u6587\u6D41\u7A0B
 - \u957F\u7BC7\u9009\u9898/\u626B\u699C\uFF1Astory-long-scan\uFF1B\u957F\u7BC7\u62C6\u6587\uFF1Astory-long-analyze\u3002\u53EA\u8BF4\u300C\u9009\u9898\u300D\u300C\u770B\u770B\u5199\u4EC0\u4E48\u300D
   \u53C8\u6CA1\u8BF4\u7BC7\u5E45\u65F6\uFF0C\u5148\u95EE\u4E00\u53E5\u957F\u7BC7\u8FD8\u662F\u77ED\u7BC7
-- \u7075\u611F\u5E93\u3001\u63D0\u70BC\u7075\u611F\u3001\u8DE8\u4E66\u7075\u611F\u805A\u5408\u3001\u66F4\u65B0\u7075\u611F\u5E93\uFF1Astory-long-analyze \u7684\u53EF\u9009\u7075\u611F\u5E93\u7BA1\u9053
-  \uFF08\u5355\u4E66\u62C6\u6587\u4E0D\u81EA\u52A8\u5165\u5E93\uFF09
 - \u77ED\u7BC7\u9009\u9898/\u62C6\u6587/\u5199\u4F5C\uFF1Astory-short-scan\u3001story-short-analyze\u3001story-short-write
 - \u5BFC\u5165\u5DF2\u6709\u4F5C\u54C1\uFF1Astory-import\u3002\u5BFC\u5B8C\u957F\u7BC7\u8BF4 /story-long-write \u5199\u7B2CN\u7AE0\uFF08N \u662F\u5BFC\u5165\u540E\u7684\u4E0B\u4E00\u7AE0\uFF09
   \u7EED\u5199\uFF1B\u5BFC\u5B8C\u77ED\u7BC7\u7528 /story-short-write \u8865\u5B8C\u6784\u601D
@@ -303,7 +371,7 @@ Agent \u8FC7\u7A0B\u901A\u8FC7\u53F3\u4FA7\u52A8\u6001\u680F\u6216\u5B98\u65B9 C
    \u6216 \u8BBE\u5B9A.md \u6587\u4EF6\u7684\u662F\u77ED\u7BC7\uFF1B\u65E0\u6CD5\u53EF\u9760\u5224\u65AD\u65F6\u8BF7\u6C42\u786E\u8BA4\u3002
 3. \u957F\u7BC7\u6309\u9700\u5EFA\u7ACB \u6B63\u6587/\u3001\u8BBE\u5B9A/\u3001\u5927\u7EB2/\u3002\u521D\u59CB\u5316\u3001\u5F00\u4E66\u3001\u5927\u7EB2\u548C\u7EC6\u7EB2\u9636\u6BB5\u90FD\u4E0D\u5EFA \u8FFD\u8E2A/\uFF0C
    \u4E5F\u4E0D\u5199 \u8FFD\u8E2A/_tracking-state.json\uFF1A\u8FFD\u8E2A\u5728\u7B2C\u4E00\u7AE0\u6B63\u6587\u52A8\u7B14\u524D\uFF0C\u7531 story-long-write
-   \u5355\u7AE0\u6D41\u7A0B\u7528\u5B83\u7684 scripts/tracking_commit.py init \u521D\u59CB\u5316\uFF08\u4E8B\u52A1 JSON \u653E\u4E66\u76EE\u5F55
+   \u5355\u7AE0\u6D41\u7A0B\u7528\u5B83\u7684 scripts/tracking_commit.js init \u521D\u59CB\u5316\uFF08\u4E8B\u52A1 JSON \u653E\u4E66\u76EE\u5F55
    .story/work/\uFF0Ccheck \u901A\u8FC7\u540E\u5220\u6389\uFF09\uFF0C\u4E4B\u540E\u6BCF\u7AE0\u7531\u811A\u672C\u63D0\u4EA4\u3002_tracking-state.json \u4E0E
    \u4E0A\u4E0B\u6587.md \u7B49\u8FFD\u8E2A\u89C6\u56FE\u6587\u4EF6\u53EA\u7531\u811A\u672C\u81EA\u52A8\u751F\u6210\uFF0C\u7EDD\u4E0D\u624B\u6539\u3002
    \u7B2C\u4E00\u7AE0\u6B63\u6587\u843D\u76D8\u524D\u5FC5\u987B\u6709\u5BF9\u5E94\u7EC6\u7EB2\u3002\u77ED\u7BC7\u4FDD\u6301\u8F7B\u91CF\u7ED3\u6784\uFF0C\u4E0D\u5F3A\u52A0\u957F\u7BC7 Tracking\u3002
@@ -538,12 +606,20 @@ function pythonVersion(value, floor) {
   const minor = Number(match[2]);
   return { ok: major > floor[0] || major === floor[0] && minor >= floor[1], version: match[0].replace(/^Python\s+/u, ""), minimum };
 }
-async function hostPython(floor, probe = commandOutput) {
+async function hostPython(floor, probe = commandOutput, platform = process.platform) {
+  const candidates = platform === "win32" ? [
+    { command: "python3", args: [] },
+    { command: "python", args: [] },
+    { command: "py", args: ["-3"] }
+  ] : [
+    { command: "python3", args: [] },
+    { command: "python", args: [] }
+  ];
   let fallback;
-  for (const command of ["python3", "python"]) {
-    const parsed = pythonVersion(await probe(command, ["--version"]), floor);
-    if (parsed.ok) return { command, probe: parsed };
-    if (parsed.version !== void 0) fallback ??= { command, probe: parsed };
+  for (const candidate of candidates) {
+    const parsed = pythonVersion(await probe(candidate.command, [...candidate.args, "--version"]), floor);
+    if (parsed.ok) return { command: candidate.command, probe: parsed };
+    if (parsed.version !== void 0) fallback ??= { command: candidate.command, probe: parsed };
   }
   return fallback ?? { command: "python3", probe: { ok: false, minimum: pythonVersion(void 0, floor).minimum } };
 }
@@ -655,10 +731,14 @@ function normalizedRelativePath(path) {
 }
 function proseLocation(path) {
   const segments = path.split("/");
-  if (segments.length < 2) return void 0;
+  const name2 = segments.at(-1) ?? "";
+  if (name2 === "\u6B63\u6587.md") {
+    return { book: segments.slice(0, -1).join("/"), name: name2, kind: "short" };
+  }
+  if (segments.length < 2 || name2.startsWith(".") || !/\.md$/iu.test(name2)) return void 0;
   const index = segments.lastIndexOf("\u6B63\u6587", segments.length - 2);
   if (index < 0) return void 0;
-  return { book: segments.slice(0, index).join("/"), name: segments.at(-1) ?? "" };
+  return { book: segments.slice(0, index).join("/"), name: name2, kind: "long" };
 }
 function inBook(book, path) {
   return book === "" ? path : `${book}/${path}`;
@@ -671,10 +751,11 @@ function storyMutationAt(root, relativePath) {
   if (normalized === void 0) return void 0;
   const location = proseLocation(normalized);
   if (location === void 0) return void 0;
-  const chapterText = /^第0*(\d+)章/u.exec(location.name)?.[1];
+  const chapterText = location.kind === "long" ? /^第0*(\d+)章/u.exec(location.name)?.[1] : void 0;
   return {
     mutation: { root, path: normalized, ...chapterText === void 0 ? {} : { chapter: Number(chapterText) } },
-    book: location.book
+    book: location.book,
+    kind: location.kind
   };
 }
 function insideRootDisplay(root, candidate) {
@@ -711,7 +792,7 @@ async function storyMutation(exec, fs) {
   }
   const fallback = detectStoryMutation(exec.name, exec.arguments, cwd);
   const location = fallback === void 0 ? void 0 : proseLocation(fallback.path);
-  return fallback === void 0 || location === void 0 ? void 0 : { mutation: fallback, book: location.book };
+  return fallback === void 0 || location === void 0 ? void 0 : { mutation: fallback, book: location.book, kind: location.kind };
 }
 async function target(fs, root, path, signal) {
   return fs.resolve(path, { cwd: root, ...signal === void 0 ? {} : { signal } });
@@ -719,8 +800,17 @@ async function target(fs, root, path, signal) {
 async function exists(fs, root, path, signal) {
   return target(fs, root, path, signal).then((value) => fs.stat(value, signal)).then((info) => info !== void 0, () => false);
 }
+async function existsDirectory(fs, root, path, signal) {
+  return target(fs, root, path, signal).then((value) => fs.stat(value, signal)).then((info) => info?.type === "directory", () => false);
+}
 async function isLongFormBook(fs, root, book, signal) {
   return await exists(fs, root, inBook(book, "\u5927\u7EB2"), signal) || await exists(fs, root, inBook(book, "\u8FFD\u8E2A"), signal);
+}
+async function isPostWriteProseBook(fs, root, book, kind, signal) {
+  if (kind === "short") {
+    return exists(fs, root, inBook(book, "\u8BBE\u5B9A.md"), signal);
+  }
+  return await isLongFormBook(fs, root, book, signal) || await existsDirectory(fs, root, inBook(book, "\u8BBE\u5B9A"), signal) || await exists(fs, root, inBook(book, "\u8BBE\u5B9A.md"), signal);
 }
 var OUTLINE_MIN_CHARS = 30;
 var OUTLINE_READ_LIMIT = 64 * 1024;
@@ -741,9 +831,37 @@ async function chapterOutlines(fs, root, book, chapter, signal) {
   return entries.filter((entry) => entry.type === "file" && Number(/^细纲_第0*(\d+)章.*\.md$/u.exec(entry.name)?.[1]) === chapter).sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
 }
 var TRACKING_STATE = "\u8FFD\u8E2A/_tracking-state.json";
+var TRACKING_STATE_READ_LIMIT = 2 * 1024 * 1024;
 var IMPORT_MARKER = ".story/work/\u5BFC\u5165\u4E2D.md";
 async function hasTrackingState(fs, root, book, signal) {
   return exists(fs, root, inBook(book, TRACKING_STATE), signal);
+}
+async function trackingCheckpointHardIssue(fs, root, book, signal) {
+  const statePath = inBook(book, TRACKING_STATE);
+  if (!await exists(fs, root, statePath, signal)) return void 0;
+  if (fs.readBytes === void 0) return void 0;
+  let parsed;
+  try {
+    const file = await target(fs, root, statePath, signal);
+    const bytes = await fs.readBytes(file, signal, TRACKING_STATE_READ_LIMIT);
+    parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
+  } catch {
+    return `${statePath} \u65E0\u6CD5\u89E3\u6790\uFF1B\u505C\u6B62\u5199\u6B63\u6587\u5E76\u91CD\u65B0 /story-import\uFF0C\u4E0D\u80FD\u731C\u6D4B\u6216\u624B\u8865\u72B6\u6001`;
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return `${statePath} \u4E0D\u662F\u5F53\u524D schema_version=4\uFF1B\u505C\u6B62\u5199\u6B63\u6587\u5E76\u91CD\u65B0 /story-import\uFF0C\u4E0D\u4FDD\u7559\u65E7\u7ED3\u6784\u517C\u5BB9\u8DEF\u5F84`;
+  }
+  const document = parsed;
+  if (document.schema_version !== 4) {
+    return `${statePath} \u4E0D\u662F\u5F53\u524D schema_version=4\uFF1B\u505C\u6B62\u5199\u6B63\u6587\u5E76\u91CD\u65B0 /story-import\uFF0C\u4E0D\u4FDD\u7559\u65E7\u7ED3\u6784\u517C\u5BB9\u8DEF\u5F84`;
+  }
+  if (!Number.isInteger(document.state_revision)) {
+    return `${statePath} \u7F3A\u5C11\u6574\u6570 state_revision\uFF1B\u505C\u6B62\u5199\u6B63\u6587\u5E76\u91CD\u65B0 /story-import`;
+  }
+  if (!Number.isInteger(document.last_committed_chapter)) {
+    return `${statePath} \u7F3A\u5C11\u6574\u6570 last_committed_chapter\uFF1B\u505C\u6B62\u5199\u6B63\u6587\u5E76\u91CD\u65B0 /story-import`;
+  }
+  return void 0;
 }
 async function hasImportSignal(fs, root, book, signal) {
   if (await exists(fs, root, inBook(book, IMPORT_MARKER), signal)) return true;
@@ -752,21 +870,50 @@ async function hasImportSignal(fs, root, book, signal) {
 }
 async function validateStoryMutation(fs, mutation, signal) {
   const location = proseLocation(mutation.path);
-  if (mutation.chapter === void 0 || location === void 0) return void 0;
-  const { book } = location;
-  if (!await isLongFormBook(fs, mutation.root, book, signal)) return void 0;
-  if (await exists(fs, mutation.root, mutation.path, signal)) return void 0;
-  if (!await hasTrackingState(fs, mutation.root, book, signal) && await hasImportSignal(fs, mutation.root, book, signal)) {
+  if (location === void 0) return void 0;
+  const { book, kind } = location;
+  if (kind === "short") {
+    if (await exists(fs, mutation.root, mutation.path, signal)) return void 0;
+    if (await hasImportSignal(fs, mutation.root, book, signal)) return void 0;
+    if (!await exists(fs, mutation.root, inBook(book, "\u8BBE\u5B9A.md"), signal)) return void 0;
+    if (!await exists(fs, mutation.root, inBook(book, "\u5C0F\u8282\u5927\u7EB2.md"), signal)) {
+      return `Oh Story \u963B\u6B62\u5199\u5165\u77ED\u7BC7\u6B63\u6587 ${mutation.path}\uFF1A\u7F3A\u5C11\u540C\u76EE\u5F55 ${inBook(book, "\u5C0F\u8282\u5927\u7EB2.md")}\u3002\u5148\u6309 story-short-write \u5B8C\u6210\u300C\u5C0F\u8282\u5927\u7EB2.md\u300D\u518D\u5199\u6B63\u6587\u3002`;
+    }
     return void 0;
   }
-  const outlines = await chapterOutlines(fs, mutation.root, book, mutation.chapter, signal);
-  const [first] = outlines;
-  if (first !== void 0) {
-    for (const outline of outlines) if (!await outlineIsEmpty(fs, outline.target, signal)) return void 0;
-    return `Oh Story \u963B\u6B62\u5199\u5165\u7B2C ${String(mutation.chapter)} \u7AE0\uFF1A\u7EC6\u7EB2 ${inBook(book, "\u5927\u7EB2")}/${first.name} \u662F\u7A7A\u7684\uFF08\u4E0D\u8BA1 # \u53F7\u548C\u7A7A\u767D\u4E0D\u5230 ${String(OUTLINE_MIN_CHARS)} \u5B57\uFF09\u3002\u5148\u6309 story-long-write \u5355\u7AE0\u6D41\u7A0B\u628A\u7EC6\u7EB2\u5199\u5B8C\u6574\uFF08\u8FD9\u7AE0\u53D1\u751F\u4EC0\u4E48\u3001\u4E3B\u89D2\u505A\u4EC0\u4E48\u9009\u62E9\uFF09\uFF0C\u518D\u5199\u6B63\u6587\u3002`;
+  if (mutation.chapter === void 0) return void 0;
+  if (!await isLongFormBook(fs, mutation.root, book, signal)) return void 0;
+  const trackingPresent = await hasTrackingState(fs, mutation.root, book, signal);
+  if (!trackingPresent && await hasImportSignal(fs, mutation.root, book, signal)) {
+    return void 0;
   }
-  const padded = String(mutation.chapter).padStart(3, "0");
-  return `Oh Story \u963B\u6B62\u5199\u5165\u7B2C ${String(mutation.chapter)} \u7AE0\uFF1A\u672A\u627E\u5230\u5BF9\u5E94\u7684 ${inBook(book, "\u5927\u7EB2")}/\u7EC6\u7EB2_\u7B2C${padded}\u7AE0*.md\u3002\u5148\u6309 story-long-write \u5355\u7AE0\u6D41\u7A0B\u8865\u5EFA\u7EC6\u7EB2\u518D\u5199\u6B63\u6587\u3002`;
+  const existingChapter = await exists(fs, mutation.root, mutation.path, signal);
+  if (!existingChapter) {
+    const outlines = await chapterOutlines(fs, mutation.root, book, mutation.chapter, signal);
+    const [first] = outlines;
+    if (first !== void 0) {
+      let hasContent = false;
+      for (const outline of outlines) {
+        if (!await outlineIsEmpty(fs, outline.target, signal)) {
+          hasContent = true;
+          break;
+        }
+      }
+      if (!hasContent) {
+        return `Oh Story \u963B\u6B62\u5199\u5165\u7B2C ${String(mutation.chapter)} \u7AE0\uFF1A\u7EC6\u7EB2 ${inBook(book, "\u5927\u7EB2")}/${first.name} \u662F\u7A7A\u7684\uFF08\u4E0D\u8BA1 # \u53F7\u548C\u7A7A\u767D\u4E0D\u5230 ${String(OUTLINE_MIN_CHARS)} \u5B57\uFF09\u3002\u5148\u6309 story-long-write \u5355\u7AE0\u6D41\u7A0B\u628A\u7EC6\u7EB2\u5199\u5B8C\u6574\uFF08\u8FD9\u7AE0\u53D1\u751F\u4EC0\u4E48\u3001\u4E3B\u89D2\u505A\u4EC0\u4E48\u9009\u62E9\uFF09\uFF0C\u518D\u5199\u6B63\u6587\u3002`;
+      }
+    } else {
+      const padded = String(mutation.chapter).padStart(3, "0");
+      return `Oh Story \u963B\u6B62\u5199\u5165\u7B2C ${String(mutation.chapter)} \u7AE0\uFF1A\u672A\u627E\u5230\u5BF9\u5E94\u7684 ${inBook(book, "\u5927\u7EB2")}/\u7EC6\u7EB2_\u7B2C${padded}\u7AE0*.md\u3002\u5148\u6309 story-long-write \u5355\u7AE0\u6D41\u7A0B\u8865\u5EFA\u7EC6\u7EB2\u518D\u5199\u6B63\u6587\u3002`;
+    }
+  }
+  if (trackingPresent) {
+    const checkpointIssue = await trackingCheckpointHardIssue(fs, mutation.root, book, signal);
+    if (checkpointIssue !== void 0) {
+      return `Oh Story \u963B\u6B62\u5199\u5165\u7B2C ${String(mutation.chapter)} \u7AE0\uFF1A${checkpointIssue}\u3002`;
+    }
+  }
+  return void 0;
 }
 async function decideStoryMutation(exec, next) {
   const fs = exec.agent?.ctx.get("fs");
@@ -828,16 +975,120 @@ async function decideChapterExtractorWrite(exec, next) {
   const reason = fs === void 0 || cwd === void 0 ? `Oh Story \u963B\u6B62 chapter-extractor \u5199\u5165\uFF1A\u65E0\u6CD5\u786E\u8BA4\u9879\u76EE\u76EE\u5F55\u3002${ANALYSIS_INPUT_RULE}` : await validateAnalysisInputWrite(fs, cwd, mutationPath(exec.name, exec.arguments), exec.signal);
   return reason === void 0 ? next() : { kind: "deny", reason };
 }
+var PROSE_INSPECT_LIMIT = 128 * 1024;
+var PROSE_SHORT_WRITE_BYTES = 200;
+var QUOTED_DIALOGUE_LINE = /「[^」]*」|『[^』]*』|【[^】]*】|“[^”]*”|"[^"]*"/gu;
+var TERMINAL_PUNCTUATION = new Set(Array.from('\u3002\uFF01\uFF1F\u2026\u201D\u300F\u300D\uFF09)!?.~\u2014\u3011"'));
+var END_SIGNOFF_LINE = /^[-—~～＜<【[（(《\s]*(?:全文完|正文完|全书完|本卷完|完结|完|END|End|end|THE\s+END|The\s+End|the\s+end)[-—~～＞>】\]）)》.。！!\s]*$/u;
+function isSkippableProseLine(line) {
+  return line === "" || line.startsWith("#") || line === "---" || /^[-—=*·•\s]+$/u.test(line) || END_SIGNOFF_LINE.test(line);
+}
+var HARD_DEFECT_PATTERNS = [
+  { pattern: /\uFFFD/u, label: "\u51FA\u73B0\u4E71\u7801\u66FF\u6362\u5B57\u7B26\uFF08\uFFFD\uFF09" },
+  { pattern: /^(?:Sure|Certainly|Here'?s|As an AI|I (?:cannot|can't|am unable|apologize))\b/u, label: "\u51FA\u73B0\u82F1\u6587 AI \u5143\u4FE1\u606F\u524D\u7F00", stripDialogue: true },
+  {
+    pattern: /我(?:无法|不能)(?:继续(?:写|创作|生成|下去|输出)?|生成(?:内容|文本|正文)?|创作|续写|写作|完成(?:这个|本)?(?:章|篇|创作|请求)?)/u,
+    label: "\u53D9\u8FF0\u4E2D\u51FA\u73B0\u751F\u6210\u62D2\u7EDD\u8BED",
+    stripDialogue: true
+  },
+  { pattern: /[（(](?:此处|以下|这里|下文|后续)?[^）)]{0,10}(?:省略|略去|略过)[^）)]{0,10}[）)]/u, label: "\u51FA\u73B0\u62EC\u53F7\u7701\u7565\u5360\u4F4D\u7B26" },
+  { pattern: /(?:未完待续|TODO|占位符|placeholder|待补充|此处待填|此处待补)/u, label: "\u51FA\u73B0\u672A\u5B8C\u6210\u5360\u4F4D\u8BCD" },
+  {
+    pattern: /作为(?:一个)?(?:AI|人工智能|大?语言模型|智能助手|聊天助手)(?:语言模型|大?模型|助手|机器人)?(?=[，,。、；;：:！!？?\s）)」』"】]|我|无法|不能|没法|$)/u,
+    label: "\u53D9\u8FF0\u4E2D\u51FA\u73B0 AI \u81EA\u6307\u5143\u4FE1\u606F",
+    stripDialogue: true
+  },
+  {
+    pattern: /细纲|(?<!剧)情节点|卷纲|功能标签|目标情绪|字数目标|字数口径|章首钩子|章尾钩子|这章不能说破|本章禁止提前释放|排纲笔记|排纲底稿|任务描述/u,
+    label: "\u53D9\u8FF0\u4E2D\u6CC4\u6F0F\u5199\u4F5C\u5DE5\u7A0B\u8BCD",
+    stripDialogue: true
+  }
+];
+function detectProseHardDefects(content) {
+  const warnings = /* @__PURE__ */ new Set();
+  const proseLines = [];
+  for (const raw of content.split(/\r?\n/u)) {
+    const line = raw.trim();
+    if (isSkippableProseLine(line)) continue;
+    proseLines.push(line);
+    const outsideQuotes = line.replace(QUOTED_DIALOGUE_LINE, "\uFF1F");
+    for (const rule of HARD_DEFECT_PATTERNS) {
+      const sample = rule.stripDialogue === true ? outsideQuotes : line;
+      if (rule.pattern.test(sample)) warnings.add(rule.label);
+    }
+  }
+  for (let index = 1; index < proseLines.length; index += 1) {
+    const current = proseLines[index];
+    if (current === proseLines[index - 1] && Array.from(current).length >= 8) {
+      warnings.add("\u51FA\u73B0\u7D27\u90BB\u884C\u91CD\u590D");
+      break;
+    }
+  }
+  if (proseLines.length > 0) {
+    const last = proseLines[proseLines.length - 1];
+    const lastChar = Array.from(last).at(-1);
+    if (lastChar !== void 0 && !TERMINAL_PUNCTUATION.has(lastChar)) {
+      warnings.add("\u7ED3\u5C3E\u7591\u4F3C\u622A\u65AD\uFF08\u672A\u4EE5\u6807\u70B9\u6536\u675F\uFF09");
+    }
+  }
+  return [...warnings];
+}
+async function duplicateChapterTitleDefects(fs, root, book, signal) {
+  const entries = await target(fs, root, inBook(book, "\u6B63\u6587"), signal).then((directory) => fs.listDir(directory, signal)).catch(() => []);
+  const titles = /* @__PURE__ */ new Map();
+  for (const entry of entries) {
+    if (entry.type !== "file" || !entry.name.endsWith(".md")) continue;
+    const match = /^第0*\d+章[_\- \u3000]+(.+)$/u.exec(entry.name.slice(0, -3));
+    const title = match?.[1]?.trim();
+    if (title === void 0 || title === "") continue;
+    titles.set(title, [...titles.get(title) ?? [], entry.name]);
+  }
+  const findings = [];
+  for (const [title, files] of titles.entries()) {
+    if (files.length > 1) {
+      findings.push(`\u7AE0\u8282\u6807\u9898\u91CD\u590D\u300C${title}\u300D\uFF08${files.sort().join("\u3001").slice(0, 60)}\uFF09`);
+    }
+  }
+  return findings;
+}
+async function inspectWrittenProse(fs, root, book, path, kind, signal) {
+  const findings = [];
+  if (fs.readBytes !== void 0) {
+    try {
+      const file = await target(fs, root, path, signal);
+      const bytes = await fs.readBytes(file, signal, PROSE_INSPECT_LIMIT);
+      if (bytes.byteLength < PROSE_SHORT_WRITE_BYTES) {
+        findings.push(`\u6B63\u6587\u4EC5 ${String(bytes.byteLength)} \u5B57\u8282\uFF0C\u7591\u4F3C\u672A\u5199\u5B8C\u6216\u843D\u76D8\u4E0D\u5B8C\u6574`);
+      }
+      const content = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+      findings.push(...detectProseHardDefects(content));
+    } catch {
+    }
+  }
+  if (kind === "long") {
+    findings.push(...await duplicateChapterTitleDefects(fs, root, book, signal));
+  }
+  return findings;
+}
 function postWriteReminderText(path, options = {}) {
+  if (options.hardDefectsOnly === true) {
+    return [
+      `<oh-story-post-write>\u6B63\u6587 ${path} \u5DF2\u53D8\u66F4\u3002`,
+      ...options.hardDefects !== void 0 && options.hardDefects.length > 0 ? [`\u68C0\u6D4B\u5230\u7591\u4F3C\u786C\u4F24\uFF08${options.hardDefects.join("\uFF1B")}\uFF09\uFF0C\u8BF7\u5728\u6536\u5C3E\u6216\u7EE7\u7EED\u524D\u6838\u67E5\u5E76\u4FEE\u6B63\u6B63\u6587\uFF0C\u52FF\u5C06\u5360\u4F4D\u8BCD\u6216\u5DE5\u7A0B\u8BCD\u7559\u5230\u6210\u7A3F\u3002`] : [],
+      "</oh-story-post-write>"
+    ].join("");
+  }
   return [
     `<oh-story-post-write>\u6B63\u6587 ${path} \u5DF2\u53D8\u66F4\u3002`,
+    ...options.hardDefects !== void 0 && options.hardDefects.length > 0 ? [`\u68C0\u6D4B\u5230\u7591\u4F3C\u786C\u4F24\uFF08${options.hardDefects.join("\uFF1B")}\uFF09\uFF0C\u8BF7\u5728\u6536\u5C3E\u6216\u7EE7\u7EED\u524D\u6838\u67E5\u5E76\u4FEE\u6B63\u6B63\u6587\uFF0C\u52FF\u5C06\u5360\u4F4D\u8BCD\u6216\u5DE5\u7A0B\u8BCD\u7559\u5230\u6210\u7A3F\u3002`] : [],
     "\u6BCF\u6B21\u5199\u5165\u6B63\u6587\u90FD\u4F1A\u51FA\u73B0\u8FD9\u6761\u63D0\u9192\uFF0C\u4E00\u7AE0\u5199\u5230\u4E00\u534A\u65F6\u4E5F\u4F1A\uFF1B\u5B83\u4E0D\u8868\u793A\u672C\u7AE0\u5DF2\u7ECF\u5B8C\u6210\uFF0C\u4E5F\u4E0D\u662F\u4F5C\u8005\u7684\u65B0\u5199\u4F5C\u8981\u6C42\uFF0C\u7EE7\u7EED\u5F53\u524D\u6B65\u9AA4\u5373\u53EF\u3002",
     ...options.trackingUninitialized === true ? [
-      "\u672C\u4E66\u8FD8\u6CA1\u6709 \u8FFD\u8E2A/_tracking-state.json\u3002\u65B0\u4E66\u5199\u7B2C\u4E00\u7AE0\u65F6\uFF0Cdraft \u4E4B\u524D\u5148\u6309 story-long-write workflow-chapter \u5F00\u5934\u7684\u521D\u59CB\u5316\u6B65\u9AA4\u5B8C\u6574\u8BFB\u53D6 references/tracking-initialization.md\uFF0C\u6784\u9020 last_chapter=0 \u7684\u521D\u59CB\u5316\u4E8B\u52A1\u5B58\u4E66\u76EE\u5F55 .story/work/init.json\uFF0C\u8FD0\u884C scripts/tracking_commit.py init\uFF0C\u518D\u8FD0\u884C tracking_commit.py check\uFF0C\u901A\u8FC7\u540E\u5220\u6389 init.json\uFF1B",
+      "\u672C\u4E66\u8FD8\u6CA1\u6709 \u8FFD\u8E2A/_tracking-state.json\u3002\u65B0\u4E66\u5199\u7B2C\u4E00\u7AE0\u65F6\uFF0Cdraft \u4E4B\u524D\u5148\u6309 story-long-write workflow-chapter \u5F00\u5934\u7684\u521D\u59CB\u5316\u6B65\u9AA4\u5B8C\u6574\u8BFB\u53D6 references/tracking-initialization.md\uFF0C\u6784\u9020 last_chapter=0 \u7684\u521D\u59CB\u5316\u4E8B\u52A1\u5B58\u4E66\u76EE\u5F55 .story/work/init.json\uFF0C\u8FD0\u884C scripts/tracking_commit.js init\uFF0C\u518D\u8FD0\u884C tracking_commit.js check\uFF0C\u901A\u8FC7\u540E\u5220\u6389 init.json\uFF1B",
       "\u4E66\u91CC\u5728\u672C\u7AE0\u4E4B\u524D\u5DF2\u6709\u6B63\u6587\u65F6\u4E0D\u8981\u521D\u59CB\u5316\uFF0C\u505C\u4E0B\u6765\u6539\u8D70 story-import \u7684\u300C\u65E7\u8FFD\u8E2A\u9879\u76EE\u8FC1\u79FB\u300D\u3002"
     ] : [],
-    "\u7B49\u672C\u7AE0\u5199\u5B8C\u6536\u5C3E\u65F6\u518D\u63D0\u4EA4\u8FFD\u8E2A\uFF1A\u65B0\u7AE0\u5148\u7528 story-long-write \u7684 scripts/tracking_commit.py draft \u751F\u6210\u672C\u7AE0\u8349\u7A3F\uFF0C\u586B\u597D\u540E\u6267\u884C scripts/storyctl.py chapter commit\uFF08\u4F5C\u8005\u63A5\u53D7\u5F53\u524D\u957F\u5EA6\u65F6\u7528 chapter accept-current-length\uFF09\uFF1B",
-    "\u4FEE\u6539\u5DF2\u63D0\u4EA4\u7684\u7AE0\u8282\u6309 workflow-revision \u63D0\u4EA4\u4E00\u6B21 mode=revision \u4E8B\u52A1\uFF1B\u5BFC\u5165\u65E2\u6709\u6B63\u6587\u65F6\u7531 story-import \u5728\u8FC1\u79FB\u540E\u7528 tracking_commit.py init \u7EDF\u4E00\u521D\u59CB\u5316\u3002",
+    "\u7B49\u672C\u7AE0\u5199\u5B8C\u6536\u5C3E\u65F6\u518D\u63D0\u4EA4\u8FFD\u8E2A\uFF1A\u65B0\u7AE0\u5148\u7528 story-long-write \u7684 scripts/tracking_commit.js draft \u751F\u6210\u672C\u7AE0\u8349\u7A3F\uFF0C\u586B\u597D\u540E\u6267\u884C scripts/storyctl.js chapter commit\uFF08\u4F5C\u8005\u63A5\u53D7\u5F53\u524D\u957F\u5EA6\u65F6\u7528 chapter accept-current-length\uFF09\uFF1B",
+    "\u82E5 commit \u8FD4\u56DE review_required\uFF08\u8F6F\u95E8\u7981\u91CD\u70B9\u590D\u6838\uFF09\uFF0C\u4F18\u5148\u4FEE\u6539\u5BF9\u5E94\u5904\uFF1B\u5982\u786E\u8BA4\u5267\u60C5\u9700\u8981\u4FDD\u7559\uFF0C\u91CD\u65B0\u6267\u884C commit \u5E76\u9644 `--ack <rule-id>:<\u7406\u7531>`\uFF08\u6216 `--ack-all <\u7406\u7531>`\uFF09\u3002",
+    "\u4FEE\u6539\u5DF2\u63D0\u4EA4\u7684\u7AE0\u8282\u6309 workflow-revision \u63D0\u4EA4\u4E00\u6B21 mode=revision \u4E8B\u52A1\uFF1B\u5BFC\u5165\u65E2\u6709\u6B63\u6587\u65F6\u7531 story-import \u5728\u8FC1\u79FB\u540E\u7528 tracking_commit.js init \u7EDF\u4E00\u521D\u59CB\u5316\u3002",
     "\u8FFD\u8E2A/_tracking-state.json \u4EE5\u53CA \u4E0A\u4E0B\u6587.md\u3001\u89D2\u8272\u72B6\u6001/\u3001\u4F0F\u7B14.md\u3001\u65F6\u95F4\u7EBF/\u3001\u9010\u7AE0\u8BB0\u5F55/ \u7B49\u6D3E\u751F Tracking \u89C6\u56FE\u53EA\u7531\u8FD9\u4E9B\u811A\u672C\u5199\u5165\uFF0C\u7EDD\u4E0D\u624B\u6539\u3002</oh-story-post-write>"
   ].join("");
 }
@@ -854,13 +1105,31 @@ function registerOhStoryHooks(context) {
     const fs = exec.agent?.ctx.get("fs");
     const resolved = fs === void 0 ? void 0 : await storyMutation(exec, fs);
     if (fs === void 0 || resolved === void 0) return downstream;
-    const { mutation, book } = resolved;
+    const { mutation, book, kind } = resolved;
     const { root } = mutation;
-    if (!await isLongFormBook(fs, root, book, exec.signal)) return downstream;
-    const trackingUninitialized = !await hasTrackingState(fs, root, book, exec.signal) && !await hasImportSignal(fs, root, book, exec.signal);
+    if (!await isPostWriteProseBook(fs, root, book, kind, exec.signal)) return downstream;
+    const longFormTrackingBook = kind === "long" && await isLongFormBook(fs, root, book, exec.signal);
+    const [trackingPresent, importing, hardDefects] = await Promise.all([
+      longFormTrackingBook ? hasTrackingState(fs, root, book, exec.signal) : Promise.resolve(false),
+      longFormTrackingBook ? hasImportSignal(fs, root, book, exec.signal) : Promise.resolve(false),
+      inspectWrittenProse(fs, root, book, mutation.path, kind, exec.signal)
+    ]);
+    if (!longFormTrackingBook && hardDefects.length === 0) return downstream;
+    const trackingUninitialized = longFormTrackingBook && !trackingPresent && !importing;
     const reminder = createUserMessage({
-      source: { kind: "oh-story-post-write", form: "notice", summary: boundContextSummary(`\u6B63\u6587 ${mutation.path} \u5DF2\u53D8\u66F4`) },
-      content: [{ type: "text", text: postWriteReminderText(mutation.path, { trackingUninitialized }) }]
+      source: {
+        kind: "oh-story-post-write",
+        form: "notice",
+        summary: boundContextSummary(hardDefects.length > 0 ? `\u6B63\u6587 ${mutation.path} \u5DF2\u53D8\u66F4\uFF08\u542B\u786C\u4F24\u63D0\u9192\uFF09` : `\u6B63\u6587 ${mutation.path} \u5DF2\u53D8\u66F4`)
+      },
+      content: [{
+        type: "text",
+        text: postWriteReminderText(mutation.path, {
+          trackingUninitialized,
+          hardDefects,
+          hardDefectsOnly: !longFormTrackingBook
+        })
+      }]
     });
     return {
       ...downstream,
@@ -954,6 +1223,10 @@ function bundledReferenceGuard(definition, tools) {
 // src/role-tool.ts
 var OH_STORY_ROLE_TOOL_NAME = "oh_story_role";
 var configuredRoleAgents = /* @__PURE__ */ new WeakSet();
+function restrictableRoleTools(tools, agent, requested) {
+  if (typeof tools?.get !== "function") return requested;
+  return requested.filter((name2) => tools.get(name2) !== void 0 && tools.get(name2, agent) !== void 0);
+}
 function configureRoleAgent(agent, role, persona, allow) {
   if (configuredRoleAgents.has(agent)) return;
   const systemPrompt = agent.ctx.get("systemPrompt");
@@ -964,7 +1237,7 @@ function configureRoleAgent(agent, role, persona, allow) {
     order: systemPrompt.getSectionOrder("DEPLOYMENT_PERSONA_PREFIX"),
     text: persona
   });
-  tools.restrict({ allow });
+  tools.restrict({ allow: restrictableRoleTools(tools, agent, allow) });
   markOhStoryRoleSession(agent.session, role);
   configuredRoleAgents.add(agent);
 }
@@ -1061,7 +1334,7 @@ async function createOhStoryRoleTool(subagents, loadedPersonas) {
       if (exec.agent === void 0) throw new Error("oh_story_role requires a calling DSH Agent.");
       const persona = personas.get(args.role);
       if (persona === void 0) throw new Error(`Oh Story Role ${args.role} is not bundled.`);
-      const allowed = roleToolFilter(args.role).allow.filter((name2) => exec.agent?.ctx.tools.get(name2, exec.agent) !== void 0);
+      const allowed = restrictableRoleTools(exec.agent.ctx.tools, exec.agent, roleToolFilter(args.role).allow);
       const runtime = subagents ?? exec.agent.ctx.get("subagents");
       if (runtime === void 0) throw new Error("oh_story_role requires the DSH subagent runtime.");
       const run = await startRole(runtime, args.role, {
@@ -1098,6 +1371,7 @@ async function registerOhStoryRoleTool(context) {
     createOhStoryReferenceTool()
   ]);
   const definition = await createOhStoryRoleTool(context.subagents, personas);
+  if (context.fiber?.uid === null) return;
   context.tools.register(referenceDefinition);
   context.tools.guard(bundledReferenceGuard(referenceDefinition, context.tools));
   if ("startActivation" in context.subagents) {
@@ -1111,7 +1385,7 @@ async function registerOhStoryRoleTool(context) {
       const persona = personas.get(role);
       if (persona === void 0) return;
       const tools = agent.ctx.get("tools");
-      const allow = roleToolFilter(role).allow.filter((tool) => tools?.get(tool, agent) !== void 0);
+      const allow = restrictableRoleTools(tools, agent, roleToolFilter(role).allow);
       configureRoleAgent(agent, role, persona, allow);
     });
   }
@@ -1234,15 +1508,17 @@ function registerOhStoryProductionTool(context) {
 }
 
 // src/workspace-route.ts
-import { createHash as createHash2 } from "node:crypto";
+import { createHash as createHash2, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { realpath as nodeRealpath, stat as nodeStat } from "node:fs/promises";
-import { extname as extname2, isAbsolute as isAbsolute3, relative as relative3 } from "node:path";
+import { readFile as readFile4, realpath as nodeRealpath, stat as nodeStat } from "node:fs/promises";
+import { dirname as dirname3, extname as extname2, isAbsolute as isAbsolute3, relative as relative3, resolve as resolve6 } from "node:path";
+import { Readable } from "node:stream";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { FsError } from "@deepseek-ai/dsh-fs";
 import { SessionId } from "@deepseek-ai/dsh-session";
 
 // src/creative-paths.ts
-var STORY_DIRECTORIES = ["\u6B63\u6587", "\u5927\u7EB2", "\u8BBE\u5B9A", "\u8FFD\u8E2A", "\u5BF9\u6807", "\u53C2\u8003\u8D44\u6599"];
+var STORY_DIRECTORIES = ["\u6B63\u6587", "\u5927\u7EB2", "\u8BBE\u5B9A", "\u8FFD\u8E2A", "\u5BF9\u6807", "\u53C2\u8003\u8D44\u6599", "\u62C6\u6587\u5E93", "\u626B\u699C", "\u5C01\u9762"];
 var DRAMA_DIRECTORIES = ["\u8F93\u5165", "\u9879\u76EE\u5F00\u53D1", "\u8BBE\u5B9A\u96C6", "\u5267\u96C6", "\u4EA4\u4ED8", "\u521B\u4F5C\u8005\u51B3\u7B56", "\u5BA1\u67E5"];
 var GAME_DIRECTORY = "game-adaptations";
 var VIDEO_DIRECTORY = "video-recaps";
@@ -1250,24 +1526,67 @@ var CREATIVE_DIRECTORIES = [VIDEO_DIRECTORY, GAME_DIRECTORY, ...STORY_DIRECTORIE
 var SHORT_STORY_FILES = ["\u6B63\u6587.md", "\u8BBE\u5B9A.md", "\u5C0F\u8282\u5927\u7EB2.md"];
 var SHORT_STORY_FILE_SET = new Set(SHORT_STORY_FILES);
 var ROOT_FILES = /* @__PURE__ */ new Set(["short-drama.json", ...SHORT_STORY_FILES]);
+var SKIPPED_SCAN_DIRECTORIES = /* @__PURE__ */ new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  ".next",
+  ".vite",
+  "__pycache__"
+]);
 var STORY_DIRECTORY_SET = new Set(STORY_DIRECTORIES);
 var DRAMA_DIRECTORY_SET = new Set(DRAMA_DIRECTORIES);
 var CREATIVE_DIRECTORY_SET = new Set(CREATIVE_DIRECTORIES);
 var EDITABLE_EXTENSIONS = /* @__PURE__ */ new Set([".md", ".txt", ".json", ".jsonl"]);
 var GAME_EDITABLE_EXTENSIONS = /* @__PURE__ */ new Set([...EDITABLE_EXTENSIONS, ".html", ".css", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"]);
 var VIDEO_EDITABLE_EXTENSIONS = /* @__PURE__ */ new Set([...EDITABLE_EXTENSIONS, ".srt", ".ass"]);
+var PUBLISH_ROOT_FILE_PATTERN = /^发布资料(?:-[^/]+)?\.md$/u;
+var MAX_BOOK_PREFIX_DEPTH = 4;
 function pathExtension(path) {
   const slash = path.lastIndexOf("/");
   const name2 = slash < 0 ? path : path.slice(slash + 1);
   const dot = name2.lastIndexOf(".");
   return dot <= 0 ? "" : name2.slice(dot).toLowerCase();
 }
+function isPublishRootFile(name2) {
+  return !name2.includes("/") && PUBLISH_ROOT_FILE_PATTERN.test(name2);
+}
 function safeRelativePath(path) {
-  return path !== "" && !path.startsWith("/") && !path.includes("\\") && !path.split("/").some((segment) => segment === "" || segment === "." || segment === "..");
+  return path !== "" && !path.startsWith("/") && !path.includes("\\") && !path.split("/").some((segment) => segment === "" || segment.startsWith("."));
+}
+function multiBookCreativeRoot(path) {
+  const parts = path.split("/");
+  if (parts.length < 2) return void 0;
+  const maxPrefix = Math.min(MAX_BOOK_PREFIX_DEPTH, parts.length - 1);
+  for (let bookDepth = 1; bookDepth <= maxPrefix; bookDepth += 1) {
+    const prefix = parts.slice(0, bookDepth);
+    if (prefix.some((segment) => segment === "" || SKIPPED_SCAN_DIRECTORIES.has(segment) || CREATIVE_DIRECTORY_SET.has(segment))) {
+      return void 0;
+    }
+    const child = parts[bookDepth];
+    if (parts.length >= bookDepth + 2 && STORY_DIRECTORY_SET.has(child)) {
+      return `${prefix.join("/")}/${child}`;
+    }
+    if (parts.length === bookDepth + 1 && (SHORT_STORY_FILE_SET.has(child) || isPublishRootFile(child))) {
+      return prefix.join("/");
+    }
+  }
+  return void 0;
+}
+function isMultiBookStoryPath(path) {
+  return multiBookCreativeRoot(path) !== void 0;
 }
 function isCreativeRootPath(path) {
   const root = path.split("/", 1)[0];
-  return root !== void 0 && CREATIVE_DIRECTORY_SET.has(root) || ROOT_FILES.has(path);
+  return root !== void 0 && CREATIVE_DIRECTORY_SET.has(root) || ROOT_FILES.has(path) || isPublishRootFile(path) || isMultiBookStoryPath(path);
+}
+function creativeRootDirectory(path) {
+  if (!safeRelativePath(path)) return void 0;
+  if (ROOT_FILES.has(path) || isPublishRootFile(path)) return "";
+  const parts = path.split("/");
+  const first = parts[0];
+  if (first !== void 0 && CREATIVE_DIRECTORY_SET.has(first)) return first;
+  return multiBookCreativeRoot(path);
 }
 function editableCreativePath(path) {
   const extensions = path.startsWith(`${GAME_DIRECTORY}/`) ? GAME_EDITABLE_EXTENSIONS : path.startsWith(`${VIDEO_DIRECTORY}/`) ? VIDEO_EDITABLE_EXTENSIONS : EDITABLE_EXTENSIONS;
@@ -1278,7 +1597,7 @@ function editableCreativePath(path) {
 import { basename as basename2, extname } from "node:path";
 
 // src/video-narrative.ts
-var MAX_SEGMENTS = 200;
+var MAX_SEGMENTS = 1e3;
 var MAX_SOURCE_RANGES = 32;
 var MAX_SECONDS = 24 * 60 * 60;
 var MAX_TEXT = 2e4;
@@ -1292,6 +1611,9 @@ function list(value) {
 }
 function finiteTime(value) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= MAX_SECONDS ? value : void 0;
+}
+function roundTime(value) {
+  return Math.round(value * 1e4) / 1e4;
 }
 function shortText(value) {
   if (typeof value !== "string") return void 0;
@@ -1344,8 +1666,8 @@ function mappedSourceRanges(output, clips) {
     const sourceDuration = clip.end - clip.start;
     const scale = sourceDuration / outputDuration;
     mapped.push({
-      start: clip.start + (overlapStart - clip.outputStart) * scale,
-      end: clip.start + (overlapEnd - clip.outputStart) * scale,
+      start: roundTime(clip.start + (overlapStart - clip.outputStart) * scale),
+      end: roundTime(clip.start + (overlapEnd - clip.outputStart) * scale),
       sourceId: clip.sourceId,
       sourcePath: clip.sourcePath
     });
@@ -1431,7 +1753,197 @@ function creativeSummary(value) {
     spine: shortText(hypothesis?.spine)
   };
 }
+function isTimelineV3(value) {
+  if (value === void 0) return false;
+  if (value.schema_version === 3) return true;
+  const video = list(value.video);
+  if (video === void 0 || video.length === 0) return false;
+  const first = record(video[0]);
+  return first !== void 0 && typeof first.in === "number" && typeof first.out === "number";
+}
+function projectTimelineV3(timeline, resolveSourcePath, storyPlan) {
+  const sources = record(timeline.sources);
+  const rawVideo = list(timeline.video);
+  const clips = [];
+  const timelineClips = [];
+  const originals = [];
+  let timelineInvalid = rawVideo === void 0 || rawVideo.length > MAX_SEGMENTS;
+  let cursor = 0;
+  if (rawVideo !== void 0) {
+    for (const [index, candidate] of rawVideo.slice(0, MAX_SEGMENTS).entries()) {
+      const item = record(candidate);
+      const sourceSpan = item === void 0 ? void 0 : range(item.in, item.out);
+      if (item === void 0 || sourceSpan === void 0) {
+        timelineInvalid = true;
+        continue;
+      }
+      const clipId = optionalId(item.id) ?? `v${String(index + 1)}`;
+      const sourceId = optionalId(item.source);
+      const mappedRawPath = sourceId !== void 0 ? shortText(sources?.[sourceId]) ?? sourceId : void 0;
+      const sourcePath = mappedRawPath !== void 0 ? resolveSourcePath?.(mappedRawPath) ?? mappedRawPath : void 0;
+      const duration = sourceSpan.end - sourceSpan.start;
+      const outputStart = roundTime(cursor);
+      const outputEnd = roundTime(cursor + duration);
+      cursor += duration;
+      clips.push({
+        id: clipId,
+        start: sourceSpan.start,
+        end: sourceSpan.end,
+        outputStart,
+        outputEnd,
+        sourceId,
+        sourcePath
+      });
+      timelineClips.push({
+        id: clipId,
+        sourceId,
+        sourcePath,
+        source: { start: sourceSpan.start, end: sourceSpan.end, sourceId, sourcePath },
+        output: { start: outputStart, end: outputEnd }
+      });
+      const keepWindows = list(item.keep_windows);
+      if (keepWindows !== void 0) {
+        for (const windowCandidate of keepWindows) {
+          const pair = list(windowCandidate);
+          const rawStart = pair === void 0 ? void 0 : finiteTime(pair[0]);
+          const rawEnd = pair === void 0 ? void 0 : finiteTime(pair[1]);
+          if (rawStart === void 0 || rawEnd === void 0 || rawEnd - rawStart <= EPSILON) {
+            timelineInvalid = true;
+            continue;
+          }
+          const clampedStart = Math.max(sourceSpan.start, rawStart);
+          const clampedEnd = Math.min(sourceSpan.end, rawEnd);
+          if (clampedEnd - clampedStart <= EPSILON) continue;
+          const outStart = roundTime(outputStart + (clampedStart - sourceSpan.start));
+          const outEnd = roundTime(outputStart + (clampedEnd - sourceSpan.start));
+          originals.push({
+            id: `original-${String(originals.length + 1)}`,
+            kind: "original",
+            text: shortText(item.original_audio_anchor) ?? shortText(item.note),
+            output: { start: outStart, end: outEnd },
+            sourceRanges: [{ start: roundTime(clampedStart), end: roundTime(clampedEnd), sourceId, sourcePath }],
+            sourceMapping: "timeline-v3",
+            beatId: clipId,
+            audioOwner: "original_dialogue"
+          });
+        }
+      }
+    }
+  }
+  const rawSubtitles = list(timeline.subtitles) ?? [];
+  const parsedSubtitles = [];
+  for (const candidate of rawSubtitles.slice(0, MAX_SEGMENTS)) {
+    const item = record(candidate);
+    const span = item === void 0 ? void 0 : range(item.start, item.end);
+    const subtitleText = item === void 0 ? void 0 : shortText(item.text);
+    if (span !== void 0 && subtitleText !== void 0) {
+      parsedSubtitles.push({ start: span.start, end: span.end, text: subtitleText, style: shortText(item?.style) });
+    }
+  }
+  const audio = record(timeline.audio);
+  const rawNarration = list(audio?.narration);
+  const narrations = [];
+  let narrationInvalid = rawNarration !== void 0 && rawNarration.length > MAX_SEGMENTS;
+  if (rawNarration !== void 0 && rawNarration.length > 0) {
+    const slicedNarration = rawNarration.slice(0, MAX_SEGMENTS);
+    for (const [index, candidate] of slicedNarration.entries()) {
+      const item = record(candidate);
+      const at = item === void 0 ? void 0 : finiteTime(item.at);
+      const duration = item === void 0 ? void 0 : finiteTime(item.duration);
+      const endExplicit = item === void 0 ? void 0 : finiteTime(item.end);
+      const slotS = item === void 0 ? void 0 : finiteTime(item.slot_s);
+      const text2 = item === void 0 ? void 0 : shortText(item.text) ?? shortText(item.spoken_text);
+      let end;
+      if (at !== void 0 && duration !== void 0 && duration > EPSILON) {
+        end = roundTime(at + duration);
+      } else if (at !== void 0 && endExplicit !== void 0 && endExplicit - at > EPSILON) {
+        end = endExplicit;
+      } else if (at !== void 0 && slotS !== void 0 && slotS > EPSILON) {
+        end = roundTime(at + slotS);
+      } else if (at !== void 0) {
+        const matched = parsedSubtitles.find((sub) => Math.abs(sub.start - at) <= 0.05) ?? (text2 === void 0 ? void 0 : parsedSubtitles.find((sub) => sub.text === text2 && sub.start >= at - 0.1));
+        if (matched !== void 0 && matched.end - at > EPSILON) {
+          end = matched.end;
+        } else if (text2 !== void 0 && item?.duration == null && item?.end == null) {
+          const estimatedEnd = roundTime(at + Math.max(1, Math.min(12, Math.round(text2.length / 4.5 * 10) / 10)));
+          const nextItem = record(slicedNarration[index + 1]);
+          const nextAt = nextItem === void 0 ? void 0 : finiteTime(nextItem.at);
+          if (nextAt !== void 0 && nextAt - at > EPSILON) {
+            const slotEnd = nextAt - at > 0.2 ? roundTime(nextAt - 0.1) : nextAt;
+            end = Math.min(slotEnd, estimatedEnd);
+          } else if (cursor - at > EPSILON) {
+            end = Math.min(roundTime(cursor), estimatedEnd);
+          } else {
+            end = estimatedEnd;
+          }
+        }
+      }
+      if (at === void 0 || end === void 0 || end - at <= EPSILON || text2 === void 0) {
+        narrationInvalid = true;
+        continue;
+      }
+      const output = { start: at, end };
+      const mapped = clips.length > 0 ? mappedSourceRanges(output, clips) : void 0;
+      narrations.push({
+        id: optionalId(item?.id) ?? `narration-${String(index + 1)}`,
+        index,
+        kind: "narration",
+        text: text2,
+        output,
+        sourceRanges: mapped ?? [],
+        sourceMapping: mapped === void 0 ? "unavailable" : "timeline-v3"
+      });
+    }
+  } else if (parsedSubtitles.length > 0) {
+    const narrationSubs = parsedSubtitles.filter((sub) => sub.style === void 0 || sub.style === "narration");
+    for (const [index, sub] of narrationSubs.entries()) {
+      const output = { start: sub.start, end: sub.end };
+      const mapped = clips.length > 0 ? mappedSourceRanges(output, clips) : void 0;
+      narrations.push({
+        id: `subtitle-${String(index + 1)}`,
+        kind: "narration",
+        text: sub.text,
+        output,
+        sourceRanges: mapped ?? [],
+        sourceMapping: mapped === void 0 ? "unavailable" : "timeline-v3"
+      });
+    }
+  }
+  const segments = [...narrations, ...originals].sort((left, right) => left.output.start - right.output.start || left.output.end - right.output.end || left.kind.localeCompare(right.kind));
+  const warnings = [];
+  if (timelineInvalid) warnings.push("invalid-timeline");
+  if (narrationInvalid) warnings.push("invalid-narration");
+  const extentStarts = [
+    ...segments.map((segment) => segment.output.start),
+    ...timelineClips.map((clip) => clip.output.start)
+  ];
+  const extentEnds = [
+    ...segments.map((segment) => segment.output.end),
+    ...timelineClips.map((clip) => clip.output.end)
+  ];
+  const outputExtent = extentStarts.length === 0 ? void 0 : {
+    start: Math.min(...extentStarts),
+    end: Math.max(...extentEnds)
+  };
+  return {
+    authoredClock: "output",
+    segments,
+    clips: timelineClips,
+    creative: creativeSummary(storyPlan),
+    facts: {
+      narrationCount: narrations.length,
+      originalCount: originals.length,
+      mappedNarrationCount: narrations.filter((segment) => segment.sourceRanges.length > 0).length,
+      outputExtent
+    },
+    warnings
+  };
+}
 function projectVideoNarrative(input) {
+  const timelineRecord = record(input.timeline);
+  if (isTimelineV3(timelineRecord)) {
+    return projectTimelineV3(timelineRecord, input.resolveSourcePath, input.storyPlan);
+  }
   const validatedClips = validatedClipMap(input.validatedClips);
   const clips = input.editMode === "cut" ? validatedClips : void 0;
   const identity = identityMode(input.editMode);
@@ -1462,9 +1974,24 @@ function projectVideoNarrative(input) {
 
 // src/video-project.ts
 var VIDEO_EXTENSIONS = /* @__PURE__ */ new Set([".mp4", ".mov", ".mkv", ".webm"]);
+var SUBTITLE_EXTENSIONS = /* @__PURE__ */ new Set([".srt", ".ass"]);
 var SKIPPED_DIRECTORIES = /* @__PURE__ */ new Set(["frames", "tts_segments", "asr_chunks", "chunks", "cache", "tmp", ".subtitle_measure"]);
 var VISIBLE_TEXT_FILES = /* @__PURE__ */ new Set([
   "project.json",
+  // Video Recap 0.8.0 creative Markdown workspace + timeline v3 + check.json v1 + video-reference
+  "BRIEF.md",
+  "MEDIA_NOTES.md",
+  "EDIT_PLAN.md",
+  "PROMO.md",
+  "STORYBOARD.md",
+  "SCRIPT.md",
+  "REFERENCE_NOTES.md",
+  "reference_metrics.json",
+  "check.json",
+  "probe.json",
+  "transcript.json",
+  "measure.json",
+  // Legacy pre-0.8.0 artifacts (kept read-compatible for existing projects)
   "recap_run_manifest.json",
   "recap_phase.json",
   "agent_narration_brief.md",
@@ -1496,6 +2023,18 @@ var VISIBLE_TEXT_FILES = /* @__PURE__ */ new Set([
   "subtitles.ass"
 ]);
 var ARTIFACT_META = {
+  "BRIEF.md": { label: "\u9700\u6C42\u4E0E\u753B\u5E45", kind: "plan" },
+  "MEDIA_NOTES.md": { label: "\u7D20\u6750\u7B14\u8BB0", kind: "plan" },
+  "EDIT_PLAN.md": { label: "\u526A\u8F91\u4E0E\u65C1\u767D\u65B9\u6848", kind: "script" },
+  "PROMO.md": { label: "\u5BA3\u53D1\u6587\u6848", kind: "plan" },
+  "STORYBOARD.md": { label: "\u5206\u955C\u811A\u672C", kind: "plan" },
+  "SCRIPT.md": { label: "\u89E3\u8BF4\u811A\u672C", kind: "script" },
+  "REFERENCE_NOTES.md": { label: "\u53C2\u8003\u7B14\u8BB0", kind: "plan" },
+  "reference_metrics.json": { label: "\u53C2\u8003\u6307\u6807", kind: "quality" },
+  "check.json": { label: "\u6210\u7247\u4F53\u68C0", kind: "quality" },
+  "probe.json": { label: "\u5A92\u4F53\u63A2\u6D4B", kind: "manifest" },
+  "transcript.json": { label: "\u539F\u58F0\u8F6C\u5199", kind: "subtitle" },
+  "measure.json": { label: "\u914D\u97F3\u5B9E\u6D4B", kind: "quality" },
   "recap_run_manifest.json": { label: "\u8FD0\u884C\u6E05\u5355", kind: "manifest" },
   "recap_phase.json": { label: "\u9636\u6BB5\u8D26\u672C", kind: "manifest" },
   "agent_narration_brief.md": { label: "\u89E3\u8BF4 Brief", kind: "plan" },
@@ -1525,6 +2064,27 @@ var ARTIFACT_META = {
   "subtitles.srt": { label: "SRT \u5B57\u5E55", kind: "subtitle" },
   "subtitles.ass": { label: "ASS \u5B57\u5E55", kind: "subtitle" }
 };
+var CHECK_LABELS = {
+  container_valid: "\u5BB9\u5668\u683C\u5F0F",
+  decode_integrity: "\u89E3\u7801\u5B8C\u6574\u6027",
+  geometry_and_cfr: "\u753B\u5E45\u4E0E\u5E27\u7387",
+  av_sync: "\u97F3\u753B\u540C\u6B65",
+  audio_health: "\u97F3\u9891\u54CD\u5EA6\u4E0E\u8FB9\u7F18",
+  visual_health: "\u753B\u9762\u9ED1\u5C4F\u4E0E\u5B9A\u683C",
+  subtitle_and_timing: "\u5B57\u5E55\u4E0E\u65C1\u767D\u65F6\u5E8F"
+};
+var REVIEW_HINT_LABELS = {
+  black_span: "\u9ED1\u5C4F\u7247\u6BB5",
+  freeze_span: "\u753B\u9762\u5B9A\u683C",
+  dead_air: "\u957F\u65F6\u95F4\u9759\u97F3",
+  near_silent_audio: "\u6574\u4F53\u97F3\u91CF\u8FC7\u4F4E",
+  edge_speech_truncation: "\u5207\u70B9\u4EBA\u58F0\u622A\u65AD",
+  narration_bed_audio_leak: "\u65C1\u767D\u5E95\u566A\u6B8B\u7559",
+  flash_sliver: "\u6781\u77ED\u95EA\u5E27",
+  subtitle_overlap: "\u5B57\u5E55\u91CD\u53E0",
+  narration_overlap: "\u65C1\u767D\u91CD\u53E0",
+  subtitle_past_video_end: "\u5B57\u5E55\u8D85\u51FA\u7247\u5C3E"
+};
 function videoProjectRoot(path) {
   const parts = path.split("/");
   const name2 = parts[1];
@@ -1540,9 +2100,9 @@ function visibleVideoPath(path) {
   if (root === void 0 || path === root) return false;
   const name2 = basename2(path);
   const extension = extname(name2).toLocaleLowerCase();
-  if (VISIBLE_TEXT_FILES.has(name2)) return true;
+  if (VISIBLE_TEXT_FILES.has(name2) || SUBTITLE_EXTENSIONS.has(extension)) return true;
   if (!VIDEO_EXTENSIONS.has(extension)) return false;
-  return path.startsWith(`${root}/sources/`) || path.startsWith(`${root}/outputs/`) || name2 === "edited_source.mp4" || /^recap_.+\.(?:mp4|mov|webm)$/iu.test(name2);
+  return path.startsWith(`${root}/sources/`) || path.startsWith(`${root}/outputs/`) || path.startsWith(`${root}/work/out/`) || path.startsWith(`${root}/out/`) || name2 === "edited_source.mp4" || name2 === "preview.mp4" || name2 === "final.mp4" || /^recap_.+\.(?:mp4|mov|webm)$/iu.test(name2);
 }
 function record2(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
@@ -1550,17 +2110,137 @@ function record2(value) {
 function text(value) {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : void 0;
 }
+function finiteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : void 0;
+}
+function markdownHeading(content) {
+  if (content === void 0) return void 0;
+  const line = content.split(/\r?\n/u).find((row) => /^#\s+/u.test(row));
+  const cleaned = line?.replace(/^#\s+/u, "").trim();
+  return cleaned === void 0 || cleaned === "" ? void 0 : cleaned;
+}
 function referencedMedia(files, value) {
-  const path = text(value)?.replaceAll("\\", "/");
-  if (path === void 0) return void 0;
-  const direct = files.find((file) => file.path === path || path.endsWith(`/${file.path}`));
+  const raw = text(value)?.replaceAll("\\", "/");
+  if (raw === void 0) return void 0;
+  const normalized = raw.replace(/^(?:\.\.\/)+/u, "").replace(/^\.\//u, "");
+  const direct = files.find(
+    (file) => file.path === raw || file.path === normalized || raw.endsWith(`/${file.path}`) || file.path.endsWith(`/${normalized}`)
+  );
   if (direct !== void 0) return direct;
-  const name2 = path.split("/").at(-1);
+  const name2 = raw.split("/").at(-1);
   const matching = files.filter((file) => file.path.split("/").at(-1) === name2);
   return matching.length === 1 ? matching[0] : void 0;
 }
-function previewAsset(file, role, label) {
-  return file.kind === "media" && file.mimeType?.startsWith("video/") === true ? { role, label, path: file.path, bytes: file.bytes, version: file.version, mimeType: file.mimeType } : void 0;
+function previewAsset(file, role, label, editedKind) {
+  return file.kind === "media" && file.mimeType?.startsWith("video/") === true ? {
+    role,
+    label,
+    path: file.path,
+    bytes: file.bytes,
+    version: file.version,
+    mimeType: file.mimeType,
+    ...editedKind === void 0 ? {} : { editedKind }
+  } : void 0;
+}
+function formatSec(value) {
+  const rounded = Math.round(value * 10) / 10;
+  return `${String(rounded)}s`;
+}
+function normalizeCheckStatus(value) {
+  return value === "pass" || value === "warn" || value === "fail" || value === "skip" ? value : "skip";
+}
+function reviewHintMessage(code, hint, timestamp, endTimestamp) {
+  const explicit = text(hint.detail);
+  if (explicit !== void 0) return explicit;
+  switch (code) {
+    case "black_span":
+      return timestamp !== void 0 && endTimestamp !== void 0 ? `${formatSec(timestamp)}\u2013${formatSec(endTimestamp)} \u68C0\u6D4B\u5230\u9ED1\u5C4F\uFF08${formatSec(finiteNumber(hint.duration) ?? endTimestamp - timestamp)}\uFF09` : "\u68C0\u6D4B\u5230\u9ED1\u5C4F\u7247\u6BB5";
+    case "freeze_span":
+      return timestamp !== void 0 && endTimestamp !== void 0 ? `${formatSec(timestamp)}\u2013${formatSec(endTimestamp)} \u68C0\u6D4B\u5230\u753B\u9762\u5B9A\u683C\uFF08${formatSec(finiteNumber(hint.duration) ?? endTimestamp - timestamp)}\uFF09` : "\u68C0\u6D4B\u5230\u753B\u9762\u5B9A\u683C";
+    case "edge_speech_truncation": {
+      const clipId = text(hint.clip_id);
+      const edge = hint.edge === "out" ? "\u51FA\u70B9" : "\u5165\u70B9";
+      return `${clipId ?? "\u955C\u5934"}${edge}\u7591\u4F3C\u5207\u5230\u4EBA\u58F0`;
+    }
+    case "narration_bed_audio_leak": {
+      const clipId = text(hint.clip_id);
+      const tail = finiteNumber(hint.tail_s);
+      return `${clipId ?? "\u955C\u5934"}\u5728\u65C1\u767D\u7ED3\u675F\u540E\u4ECD\u6709\u539F\u58F0\u6B8B\u7559${tail === void 0 ? "" : `\uFF08${formatSec(tail)}\uFF09`}`;
+    }
+    case "flash_sliver": {
+      const clipId = text(hint.id) ?? text(hint.clip_id);
+      const dur = finiteNumber(hint.duration_s);
+      return `${clipId ?? "\u955C\u5934"}\u65F6\u957F\u8FC7\u77ED${dur === void 0 ? "" : `\uFF08${formatSec(dur)}\uFF09`}`;
+    }
+    default:
+      return REVIEW_HINT_LABELS[code] ?? code;
+  }
+}
+function parseVideoQualityCheck(value, options = {}) {
+  const doc = record2(value);
+  const rawChecks = record2(doc?.checks);
+  if (doc === void 0 || rawChecks === void 0) return void 0;
+  const clipMap = /* @__PURE__ */ new Map();
+  for (const clip of options.clips ?? []) clipMap.set(clip.id, clip);
+  const checks = [];
+  for (const [key, entry] of Object.entries(rawChecks)) {
+    const item = record2(entry);
+    if (item === void 0) continue;
+    checks.push({
+      key,
+      label: CHECK_LABELS[key] ?? key,
+      status: normalizeCheckStatus(item.status),
+      detail: text(item.detail) ?? ""
+    });
+  }
+  if (checks.length === 0) return void 0;
+  const checkStatusMap = new Map(checks.map((item) => [item.key, item.status]));
+  const rawHints = Array.isArray(doc.review_hints) ? doc.review_hints : [];
+  const reviewHints = [];
+  for (const candidate of rawHints) {
+    const hint = record2(candidate);
+    if (hint === void 0) continue;
+    const check = text(hint.check) ?? "general";
+    const code = text(hint.code) ?? "warning";
+    const clipId = text(hint.clip_id) ?? text(hint.id);
+    const clip = clipId === void 0 ? void 0 : clipMap.get(clipId);
+    let timestamp = finiteNumber(hint.start) ?? finiteNumber(hint.at) ?? finiteNumber(hint.video_end) ?? finiteNumber(hint.end);
+    let endTimestamp = finiteNumber(hint.end);
+    if (timestamp === void 0 && clip !== void 0) {
+      timestamp = hint.edge === "out" ? clip.output.end : clip.output.start;
+      endTimestamp ??= clip.output.end;
+    }
+    const severity = checkStatusMap.get(check) === "fail" ? "fail" : "warn";
+    reviewHints.push({
+      check,
+      code,
+      label: REVIEW_HINT_LABELS[code] ?? code,
+      message: reviewHintMessage(code, hint, timestamp, endTimestamp),
+      severity,
+      timestamp,
+      endTimestamp: endTimestamp !== void 0 && timestamp !== void 0 && endTimestamp > timestamp ? endTimestamp : void 0
+    });
+  }
+  const failedCount = checks.filter((item) => item.status === "fail").length;
+  const ok = doc.ok === false ? false : failedCount === 0;
+  const hasWarn = reviewHints.length > 0 || checks.some((item) => item.status === "warn");
+  const status = !ok ? "fail" : hasWarn ? "warn" : "pass";
+  const summary = status === "fail" ? `\u7269\u7406\u4F53\u68C0\u672A\u901A\u8FC7\uFF08${String(Math.max(1, failedCount))} \u9879\u5931\u8D25\uFF09` : status === "warn" ? `\u7269\u7406\u4F53\u68C0\u901A\u8FC7\uFF0C${String(reviewHints.length > 0 ? reviewHints.length : checks.filter((item) => item.status === "warn").length)} \u6761\u5F85\u590D\u6838` : `${String(checks.filter((item) => item.status === "pass").length)} \u9879\u4F53\u68C0\u901A\u8FC7`;
+  const rawMedia = text(doc.media);
+  const resolvedMedia = rawMedia === void 0 ? void 0 : options.resolveMedia?.(rawMedia);
+  const media = resolvedMedia?.path ?? rawMedia;
+  const mediaRole = resolvedMedia?.role;
+  return {
+    ok,
+    status,
+    summary,
+    checks,
+    reviewHints,
+    ...media === void 0 ? {} : { media },
+    ...mediaRole === void 0 ? {} : { mediaRole },
+    path: options.path,
+    version: options.version
+  };
 }
 function summarizeVideoProject(root, files, metadata = {}) {
   const id = root.slice(`${VIDEO_DIRECTORY}/`.length);
@@ -1569,12 +2249,54 @@ function summarizeVideoProject(root, files, metadata = {}) {
   const manifest = record2(metadata.runManifest);
   const settings = record2(manifest?.settings);
   const assembly = record2(metadata.assembly);
-  const source = referencedMedia(projectFiles, manifest?.source_video) ?? projectFiles.find((file) => file.kind === "media" && file.path.startsWith(`${root}/sources/`) && file.mimeType?.startsWith("video/") === true);
-  const edited = projectFiles.find((file) => file.path.split("/").at(-1) === "edited_source.mp4");
-  const final = referencedMedia(projectFiles, assembly?.final_output) ?? projectFiles.filter((file) => file.kind === "media" && (file.path.startsWith(`${root}/outputs/`) || /^recap_.+\.(?:mp4|mov|webm)$/iu.test(file.path.split("/").at(-1) ?? ""))).at(-1);
+  const timeline = record2(metadata.timeline);
+  const timelineMeta = record2(timeline?.meta);
+  const timelineSources = record2(timeline?.sources);
+  const timelineVideo = Array.isArray(timeline?.video) ? timeline.video : void 0;
+  const timelineOverlays = Array.isArray(timeline?.overlays) ? timeline.overlays : void 0;
+  const isVideoMedia = (file) => file !== void 0 && file.kind === "media" && file.mimeType?.startsWith("video/") === true;
+  const overlayPaths = /* @__PURE__ */ new Set();
+  if (timelineOverlays !== void 0) {
+    for (const candidate of timelineOverlays) {
+      const overlay = record2(candidate);
+      if (overlay === void 0) continue;
+      for (const field of [overlay.source, overlay.file, overlay.path]) {
+        const key = text(field);
+        if (key === void 0) continue;
+        const mapped = timelineSources !== void 0 && key in timelineSources ? timelineSources[key] : key;
+        const resolved = referencedMedia(projectFiles, mapped) ?? referencedMedia(projectFiles, key);
+        if (resolved !== void 0) overlayPaths.add(resolved.path);
+      }
+    }
+  }
+  let timelineFirstSource;
+  if (timelineSources !== void 0 && timelineVideo !== void 0 && timelineVideo.length > 0) {
+    const firstClip = record2(timelineVideo[0]);
+    const firstKey = text(firstClip?.source);
+    if (firstKey !== void 0) {
+      const candidate = referencedMedia(projectFiles, timelineSources[firstKey]);
+      if (isVideoMedia(candidate) && !overlayPaths.has(candidate.path)) {
+        timelineFirstSource = candidate;
+      }
+    }
+  }
+  const manifestSource = referencedMedia(projectFiles, manifest?.source_video);
+  const source = (isVideoMedia(manifestSource) && !overlayPaths.has(manifestSource.path) ? manifestSource : void 0) ?? timelineFirstSource ?? projectFiles.find((file) => isVideoMedia(file) && file.path.startsWith(`${root}/sources/`) && !overlayPaths.has(file.path));
+  const previewFile = projectFiles.find((file) => isVideoMedia(file) && file.path.split("/").at(-1) === "preview.mp4");
+  const legacyEditedFile = projectFiles.find((file) => isVideoMedia(file) && file.path.split("/").at(-1) === "edited_source.mp4");
+  const edited = previewFile ?? legacyEditedFile;
+  const editedKind = previewFile !== void 0 ? "preview" : legacyEditedFile !== void 0 ? "edited" : void 0;
+  const finalCandidates = projectFiles.filter((file) => {
+    const name2 = file.path.split("/").at(-1) ?? "";
+    if (!isVideoMedia(file) || overlayPaths.has(file.path)) return false;
+    if (name2 === "preview.mp4" || name2 === "edited_source.mp4") return false;
+    return file.path.startsWith(`${root}/outputs/`) || file.path.startsWith(`${root}/work/out/`) || file.path.startsWith(`${root}/out/`) || name2 === "final.mp4" || /^recap_.+\.(?:mp4|mov|webm)$/iu.test(name2);
+  });
+  const assemblyFinal = referencedMedia(projectFiles, assembly?.final_output);
+  const final = (isVideoMedia(assemblyFinal) && !overlayPaths.has(assemblyFinal.path) ? assemblyFinal : void 0) ?? finalCandidates.find((file) => file.path.split("/").at(-1) === "final.mp4") ?? finalCandidates.at(-1);
   const previews = [
     source === void 0 ? void 0 : previewAsset(source, "source", "\u539F\u7247"),
-    edited === void 0 ? void 0 : previewAsset(edited, "edited", "\u526A\u540E\u7247"),
+    edited === void 0 ? void 0 : previewAsset(edited, "edited", editedKind === "preview" ? "\u7C97\u526A\u9884\u89C8" : "\u526A\u540E\u7247", editedKind),
     final === void 0 ? void 0 : previewAsset(final, "final", "\u6700\u7EC8\u6210\u7247")
   ].filter((value) => value !== void 0);
   const names = new Set(projectFiles.map((file) => file.path.split("/").at(-1)));
@@ -1588,14 +2310,22 @@ function summarizeVideoProject(root, files, metadata = {}) {
     state = "ready";
     stage = "complete";
     stageLabel = "\u6210\u7247\u5DF2\u5C31\u7EEA";
-  } else if (names.has("tts_meta.json")) {
+  } else if (names.has("tts_meta.json") || names.has("measure.json")) {
     state = "working";
     stage = "assemble";
     stageLabel = "\u6B63\u5728\u5408\u6210";
-  } else if (names.has("narration.json")) {
+  } else if (names.has("timeline.json")) {
+    state = "working";
+    stage = "assemble";
+    stageLabel = "\u5DF2\u5EFA\u65F6\u95F4\u7EBF";
+  } else if (names.has("narration.json") || names.has("EDIT_PLAN.md")) {
     state = "working";
     stage = "voiceover";
     stageLabel = "\u914D\u97F3\u4E0E\u5408\u6210";
+  } else if (names.has("BRIEF.md") || names.has("MEDIA_NOTES.md")) {
+    state = "working";
+    stage = "plan";
+    stageLabel = "\u65B9\u6848\u4E0E\u9009\u955C";
   } else if (cutMode && edited !== void 0) {
     if (narrated) {
       state = "waiting";
@@ -1624,30 +2354,63 @@ function summarizeVideoProject(root, files, metadata = {}) {
   const artifacts = projectFiles.flatMap((file) => {
     const name2 = file.path.split("/").at(-1) ?? "";
     const meta = ARTIFACT_META[name2];
-    return meta === void 0 ? [] : [{ ...meta, path: file.path, version: file.version }];
+    if (meta !== void 0) return [{ ...meta, path: file.path, version: file.version }];
+    const extension = extname(name2).toLocaleLowerCase();
+    if (extension === ".srt") return [{ label: `SRT \u5B57\u5E55\uFF08${name2}\uFF09`, kind: "subtitle", path: file.path, version: file.version }];
+    if (extension === ".ass") return [{ label: `ASS \u5B57\u5E55\uFF08${name2}\uFF09`, kind: "subtitle", path: file.path, version: file.version }];
+    return [];
   }).sort((left, right) => left.path.localeCompare(right.path, "zh-Hans-CN"));
   const narrationFiles = projectFiles.filter((file) => file.path.split("/").at(-1) === "narration.json");
   const narrationFile = narrationFiles.length === 1 ? narrationFiles[0] : void 0;
-  const narrative = metadata.narration === void 0 && metadata.validatedClips === void 0 && metadata.visualAudioBoard === void 0 && metadata.storyPlan === void 0 ? void 0 : projectVideoNarrative({
+  const timelineFiles = projectFiles.filter((file) => file.path.split("/").at(-1) === "timeline.json");
+  const timelineFile = timelineFiles.length === 1 ? timelineFiles[0] : void 0;
+  const checkFiles = projectFiles.filter((file) => file.path.split("/").at(-1) === "check.json");
+  const checkFile = checkFiles.length === 1 ? checkFiles[0] : void 0;
+  const narrative = metadata.timeline === void 0 && metadata.narration === void 0 && metadata.validatedClips === void 0 && metadata.visualAudioBoard === void 0 && metadata.storyPlan === void 0 ? void 0 : projectVideoNarrative({
+    timeline: metadata.timeline,
+    resolveSourcePath: (raw) => referencedMedia(projectFiles, raw)?.path ?? raw,
     narration: metadata.narration,
     validatedClips: metadata.validatedClips,
     visualAudioBoard: metadata.visualAudioBoard,
     storyPlan: metadata.storyPlan,
     editMode: cutMode ? "cut" : settings?.edit_mode
   });
+  const qualityCheck = parseVideoQualityCheck(metadata.qualityCheck, {
+    clips: narrative?.clips,
+    path: checkFile?.path,
+    version: checkFile?.version,
+    resolveMedia: (raw) => {
+      const matched = referencedMedia(projectFiles, raw);
+      if (matched !== void 0) {
+        if (final !== void 0 && matched.path === final.path) return { path: matched.path, role: "final" };
+        if (edited !== void 0 && matched.path === edited.path) return { path: matched.path, role: "edited" };
+        return { path: matched.path };
+      }
+      const normalized = raw.replaceAll("\\", "/");
+      const name2 = normalized.split("/").at(-1);
+      if (name2 === "preview.mp4" || name2 === "edited_source.mp4") return { path: raw, role: "edited" };
+      if (name2 === "final.mp4") return { path: raw, role: "final" };
+      return { path: raw };
+    }
+  });
+  const title = text(project?.title) ?? markdownHeading(metadata.storyboard) ?? markdownHeading(metadata.script) ?? text(timelineMeta?.title) ?? markdownHeading(metadata.brief) ?? markdownHeading(metadata.editPlan) ?? id;
   return {
     id,
     root,
-    title: text(project?.title) ?? id,
+    title,
     state,
     stage,
     stageLabel,
     nextArtifact,
+    editedKind,
     previews,
     artifacts,
     narrative,
+    qualityCheck,
     narrationPath: narrationFile?.path,
-    narrationVersion: narrationFile?.version
+    narrationVersion: narrationFile?.version,
+    timelinePath: timelineFile?.path,
+    timelineVersion: timelineFile?.version
   };
 }
 
@@ -1657,15 +2420,29 @@ function header(headers, name2) {
   const value = headers[name2];
   return typeof value === "string" ? value : void 0;
 }
-function parseAuthority(authority) {
+function hasUnsafeAuthorityChar(authority) {
+  if (/[\s;,@'"/\\?#]/u.test(authority)) return true;
+  for (let index = 0; index < authority.length; index += 1) {
+    const code = authority.charCodeAt(index);
+    if (code <= 32 || code === 127) return true;
+  }
+  return false;
+}
+function parseAuthority(authority, scheme = "http:") {
+  if (authority === "" || hasUnsafeAuthorityChar(authority)) return void 0;
   try {
-    return new URL(`http://${authority}`);
+    const parsed = new URL(`${scheme}//${authority}`);
+    if (parsed.username !== "" || parsed.password !== "" || parsed.pathname !== "/" || parsed.search !== "" || parsed.hash !== "" || parsed.hostname === "") {
+      return void 0;
+    }
+    return parsed;
   } catch {
     return void 0;
   }
 }
 function canonicalAuthority(entry, url) {
-  const port = url.port !== "" ? url.port : new URL(`https://${entry}`).port;
+  const other = url.protocol === "http:" ? "https:" : "http:";
+  const port = url.port !== "" ? url.port : new URL(`${other}//${entry}`).port;
   return port === "" ? url.hostname : `${url.hostname}:${port}`;
 }
 function isLoopbackHostname(hostname) {
@@ -1673,40 +2450,105 @@ function isLoopbackHostname(hostname) {
   const parts = hostname.split(".");
   return parts.length === 4 && parts[0] === "127" && parts.every((part) => /^\d{1,3}$/u.test(part) && Number(part) <= 255);
 }
-function isTrustedAuthority(host, trustedHosts) {
+function isTrustedAuthority(host, trustedHosts, protocol) {
   return trustedHosts.some((entry) => {
-    const candidate = parseAuthority(entry);
+    const candidate = parseAuthority(entry, protocol);
     if (candidate === void 0) return false;
     return canonicalAuthority(entry, candidate) === candidate.hostname ? candidate.hostname === host.hostname : candidate.host === host.host;
   });
+}
+function isBindAddressAuthority(host, bindHost) {
+  if (bindHost === void 0) return false;
+  const zoneAt = bindHost.indexOf("%");
+  const address = zoneAt === -1 ? bindHost : bindHost.slice(0, zoneAt);
+  const bindUrl = parseAuthority(address.includes(":") ? `[${address}]` : address);
+  return bindUrl !== void 0 && bindUrl.hostname === host.hostname;
+}
+function isSameAuthorityOrigin(origin, host) {
+  let originUrl;
+  try {
+    originUrl = new URL(origin);
+  } catch {
+    return false;
+  }
+  const scheme = originUrl.protocol === "https:" ? "https:" : originUrl.protocol === "http:" ? "http:" : void 0;
+  if (scheme === void 0) return false;
+  const hostUrl = parseAuthority(host, scheme);
+  return hostUrl !== void 0 && originUrl.host === hostUrl.host;
+}
+function trustedHostUrl(request, trustedHosts, bindHost, protocol = "http:") {
+  const authority = header(request.headers, "host");
+  if (authority === void 0) return void 0;
+  const host = parseAuthority(authority, protocol);
+  if (host === void 0) return void 0;
+  if (!isLoopbackHostname(host.hostname) && !isTrustedAuthority(host, trustedHosts, protocol) && !isBindAddressAuthority(host, bindHost)) {
+    return void 0;
+  }
+  return { authority, host };
 }
 function assertTrustedWorkspaceAuthority(entry) {
   const url = parseAuthority(entry);
   if (url !== void 0 && canonicalAuthority(entry, url) === entry.toLocaleLowerCase()) return;
   throw new Error(`oh-story: trustedHosts entry ${JSON.stringify(entry)} is not a bare host[:port] authority`);
 }
-function isTrustedWorkspaceRequest(request, trustedHosts) {
-  const authority = header(request.headers, "host");
-  if (authority === void 0) return false;
-  const host = parseAuthority(authority);
-  if (host === void 0) return false;
-  if (!isLoopbackHostname(host.hostname) && !isTrustedAuthority(host, trustedHosts)) return false;
+function isTrustedWorkspaceRequest(request, trustedHosts, bindHost, protocol = "http:") {
+  const resolved = trustedHostUrl(request, trustedHosts, bindHost, protocol);
+  if (resolved === void 0) return false;
   if (header(request.headers, "sec-fetch-site") === "cross-site") return false;
   const origin = header(request.headers, "origin");
   if (origin === void 0) return true;
+  return isSameAuthorityOrigin(origin, resolved.authority);
+}
+function isTrustedPreviewNavigation(request, trustedHosts, bindHost, protocol = "http:") {
+  if (isTrustedWorkspaceRequest(request, trustedHosts, bindHost, protocol)) return true;
+  if (trustedHostUrl(request, trustedHosts, bindHost, protocol) === void 0) return false;
+  return header(request.headers, "origin") === void 0 && header(request.headers, "sec-fetch-site") === "cross-site" && header(request.headers, "sec-fetch-mode") === "navigate" && ["document", "iframe"].includes(header(request.headers, "sec-fetch-dest") ?? "");
+}
+function normalizePreviewAuthority(authority, protocol = "http:") {
+  if (authority === void 0) return void 0;
+  const trimmed = authority.trim();
+  if (trimmed === "") return void 0;
+  const parsed = parseAuthority(trimmed, protocol);
+  return parsed === void 0 ? void 0 : canonicalAuthority(trimmed, parsed);
+}
+function matchesBoundPreviewAuthority(incomingAuthority, boundAuthority, protocol = "http:") {
+  const incoming = parseAuthority(incomingAuthority, protocol);
+  const bound = parseAuthority(boundAuthority, protocol);
+  if (incoming === void 0 || bound === void 0) return false;
+  if (incoming.host === bound.host) return true;
+  return isLoopbackHostname(incoming.hostname) && isLoopbackHostname(bound.hostname) && incoming.port === bound.port;
+}
+function isBoundPreviewAssetRequest(request, boundHost, protocol = "http:") {
+  const authority = header(request.headers, "host");
+  if (authority === void 0) return false;
+  if (!matchesBoundPreviewAuthority(authority, boundHost, protocol)) return false;
+  const origin = header(request.headers, "origin");
+  if (origin === void 0 || origin === "null") return true;
+  if (isSameAuthorityOrigin(origin, authority)) return true;
   try {
-    return new URL(origin).host === host.host;
+    const originUrl = new URL(origin);
+    if (originUrl.protocol !== "http:" && originUrl.protocol !== "https:") return false;
+    const hostUrl = parseAuthority(authority, originUrl.protocol);
+    return hostUrl !== void 0 && isLoopbackHostname(hostUrl.hostname) && isLoopbackHostname(originUrl.hostname) && originUrl.port === hostUrl.port;
   } catch {
     return false;
   }
 }
-function isTrustedPreviewNavigation(request, trustedHosts) {
-  if (isTrustedWorkspaceRequest(request, trustedHosts)) return true;
-  const authority = header(request.headers, "host");
-  if (authority === void 0) return false;
-  const host = parseAuthority(authority);
-  if (host === void 0 || !isLoopbackHostname(host.hostname) && !isTrustedAuthority(host, trustedHosts)) return false;
-  return header(request.headers, "origin") === void 0 && header(request.headers, "sec-fetch-site") === "cross-site" && header(request.headers, "sec-fetch-mode") === "navigate" && ["document", "iframe"].includes(header(request.headers, "sec-fetch-dest") ?? "");
+function isTrustedPreviewAssetRequest(request, trustedHosts, bindHost, protocol = "http:") {
+  if (isTrustedPreviewNavigation(request, trustedHosts, bindHost, protocol)) return true;
+  const resolved = trustedHostUrl(request, trustedHosts, bindHost, protocol);
+  if (resolved === void 0) return false;
+  const origin = header(request.headers, "origin");
+  if (origin === void 0 || origin === "null") return true;
+  if (isSameAuthorityOrigin(origin, resolved.authority)) return true;
+  try {
+    const originUrl = new URL(origin);
+    if (originUrl.protocol !== "http:" && originUrl.protocol !== "https:") return false;
+    const hostUrl = parseAuthority(resolved.authority, originUrl.protocol);
+    return hostUrl !== void 0 && isLoopbackHostname(hostUrl.hostname) && isLoopbackHostname(originUrl.hostname) && originUrl.port === hostUrl.port;
+  } catch {
+    return false;
+  }
 }
 
 // src/workspace-route.ts
@@ -1728,9 +2570,18 @@ var MEDIA_TYPES = /* @__PURE__ */ new Map([
 ]);
 var MEDIA_MAX_BYTES = 256 * 1024 * 1024;
 var FILE_LIMIT = 1e3;
+var MAX_WALK_DEPTH = 20;
 var PREVIEW_FILE_LIMIT = 32 * 1024 * 1024;
+var PREVIEW_TOKEN_TTL_SECONDS = 24 * 3600;
+var PREVIEW_TOKEN_BUCKET_SECONDS = 12 * 3600;
+var WORKBENCH_CSS_API_PATH = "/api/oh-story/workbench.css";
+var WORKBENCH_CSS_FALLBACK_PATH = "/oh-story/workbench.css";
+var cachedWorkbenchStylesheet;
+var workbenchStylesheetInFlight;
 var videoPreflightCache;
+var videoPreflightInFlight;
 var dramaPreflightCache;
+var dramaPreflightInFlight;
 var WorkspaceHttpError = class extends Error {
   constructor(status, message) {
     super(message);
@@ -1738,10 +2589,109 @@ var WorkspaceHttpError = class extends Error {
   }
   status;
 };
-function configured(...names) {
-  return names.some((name2) => (process.env[name2] ?? "") !== "");
+function configured(env, ...names) {
+  return names.some((name2) => (env[name2] ?? "").trim() !== "");
 }
-var dramaPreflightInFlight;
+function resetPreflightCaches() {
+  videoPreflightCache = void 0;
+  videoPreflightInFlight = void 0;
+  dramaPreflightCache = void 0;
+  dramaPreflightInFlight = void 0;
+}
+function createPreviewTokenSecret() {
+  return randomBytes(32);
+}
+async function loadWorkbenchStylesheet(readText = (file) => readFile4(file, "utf8")) {
+  if (cachedWorkbenchStylesheet !== void 0) return cachedWorkbenchStylesheet;
+  workbenchStylesheetInFlight ??= (async () => {
+    try {
+      const here = dirname3(fileURLToPath2(import.meta.url));
+      const candidates = [
+        resolve6(here, "workbench.css"),
+        resolve6(here, "../lib/workbench.css")
+      ];
+      let css;
+      for (const candidate of candidates) {
+        css = await readText(candidate).catch(() => void 0);
+        if (css !== void 0 && css.trim() !== "") break;
+      }
+      if (css === void 0 || css.trim() === "") {
+        const sourceFiles = [
+          resolve6(here, "client/plugin.css"),
+          resolve6(here, "client/game-canvas.css"),
+          resolve6(here, "client/video-studio.css"),
+          resolve6(here, "client/tool-card.css")
+        ];
+        const parts = await Promise.all(sourceFiles.map((file) => readText(file).catch(() => "")));
+        css = parts.filter((part) => part.trim() !== "").join("\n");
+      }
+      const bytes = Buffer.from(css, "utf8");
+      const version = createHash2("sha256").update(bytes).digest("hex").slice(0, 16);
+      const asset = { css, bytes, version, etag: `"sha256-${version}"` };
+      if (css.trim() !== "") {
+        cachedWorkbenchStylesheet = asset;
+      }
+      return asset;
+    } finally {
+      workbenchStylesheetInFlight = void 0;
+    }
+  })();
+  return workbenchStylesheetInFlight;
+}
+function mintPreviewToken(secret, input, nowMs = Date.now()) {
+  if (input.sessionId === "" || !gameRoot(input.root)) {
+    throw new WorkspaceHttpError(400, "\u6E38\u620F\u9884\u89C8\u6807\u8BC6\u65E0\u6548\u3002");
+  }
+  const nowSec = Math.floor(nowMs / 1e3);
+  const exp = input.exp ?? (Math.floor(nowSec / PREVIEW_TOKEN_BUCKET_SECONDS) + 2) * PREVIEW_TOKEN_BUCKET_SECONDS;
+  const boundHost = normalizePreviewAuthority(input.host);
+  const claims = {
+    s: input.sessionId,
+    r: input.root,
+    ...boundHost === void 0 ? {} : { h: boundHost },
+    exp
+  };
+  const payload = Buffer.from(JSON.stringify(claims), "utf8").toString("base64url");
+  const signature = createHmac("sha256", secret).update(payload).digest().toString("base64url");
+  return `${payload}.${signature}`;
+}
+function verifyPreviewToken(tokenValue, secret, nowMs = Date.now()) {
+  const parts = tokenValue.split(".");
+  if (parts.length !== 2) throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u65E0\u6548\u3002");
+  const [payloadB64, sigB64] = parts;
+  if (payloadB64 === void 0 || sigB64 === void 0 || !/^[A-Za-z0-9_-]+$/u.test(payloadB64) || !/^[A-Za-z0-9_-]+$/u.test(sigB64)) {
+    throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u65E0\u6548\u3002");
+  }
+  const expected = createHmac("sha256", secret).update(payloadB64).digest();
+  const actual = Buffer.from(sigB64, "base64url");
+  if (actual.byteLength !== expected.byteLength || !timingSafeEqual(actual, expected)) {
+    throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u7B7E\u540D\u65E0\u6548\u3002");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+  } catch {
+    throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u683C\u5F0F\u65E0\u6548\u3002");
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u683C\u5F0F\u65E0\u6548\u3002");
+  }
+  const record3 = parsed;
+  const sessionId = record3.s;
+  const root = record3.r;
+  const host = record3.h;
+  const exp = record3.exp;
+  if (typeof sessionId !== "string" || sessionId === "" || typeof root !== "string" || !gameRoot(root) || host !== void 0 && (typeof host !== "string" || normalizePreviewAuthority(host) === void 0) || typeof exp !== "number" || !Number.isSafeInteger(exp)) {
+    throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u5185\u5BB9\u65E0\u6548\u3002");
+  }
+  if (exp * 1e3 <= nowMs) {
+    throw new WorkspaceHttpError(401, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u5237\u65B0\u5DE5\u4F5C\u533A\u3002");
+  }
+  if (exp - Math.floor(nowMs / 1e3) > PREVIEW_TOKEN_TTL_SECONDS * 2) {
+    throw new WorkspaceHttpError(403, "\u6E38\u620F\u9884\u89C8\u4EE4\u724C\u6709\u6548\u671F\u5F02\u5E38\u3002");
+  }
+  return { sessionId, root, ...host === void 0 ? {} : { host }, exp };
+}
 async function dramaPreflight() {
   if (dramaPreflightCache !== void 0 && dramaPreflightCache.expires > Date.now()) return dramaPreflightCache.value;
   dramaPreflightInFlight ??= (async () => {
@@ -1757,31 +2707,99 @@ async function dramaPreflight() {
   })();
   return dramaPreflightInFlight;
 }
-async function videoPreflight() {
-  if (videoPreflightCache !== void 0 && videoPreflightCache.expires > Date.now()) return videoPreflightCache.value;
-  const python = (await hostPython(VIDEO_PYTHON)).probe;
-  const [ffmpegOutput, ffmpegFilters, ffprobeOutput] = await Promise.all([
-    commandOutput("ffmpeg", ["-version"]),
-    commandOutput("ffmpeg", ["-hide_banner", "-filters"]),
-    commandOutput("ffprobe", ["-version"])
+async function commandExistsOnPath(name2, probeCommand, platform) {
+  const locator = platform === "win32" ? "where" : "which";
+  const output = await probeCommand(locator, [name2]);
+  return output !== void 0 && output.trim() !== "";
+}
+function isValidIndexTtsEndpoint(raw) {
+  const value = (raw ?? "").trim();
+  if (value === "") return false;
+  const schemeEnd = value.indexOf("://");
+  if (schemeEnd < 0) return false;
+  const rest = value.slice(schemeEnd + 3);
+  const authorityEnd = rest.search(/[/?#]/u);
+  const netloc = authorityEnd < 0 ? rest : rest.slice(0, authorityEnd);
+  if (netloc.includes("@")) return false;
+  try {
+    const parsed = new URL(value);
+    return (parsed.protocol === "http:" || parsed.protocol === "https:") && parsed.hostname !== "";
+  } catch {
+    return false;
+  }
+}
+async function isRegularFile(path) {
+  return nodeStat(path).then((info) => info.isFile(), () => false);
+}
+async function probeVideoPreflight(options = {}) {
+  const env = options.env ?? process.env;
+  const platform = options.platform ?? process.platform;
+  const probeCommand = options.probeCommand ?? commandOutput;
+  const checkFile = options.isFile ?? isRegularFile;
+  const has = (name2) => commandExistsOnPath(name2, probeCommand, platform);
+  const whisperModelPath = (env.WHISPER_MODEL_PATH ?? "").trim();
+  const [
+    pythonResult,
+    ffmpegOutput,
+    ffmpegFilters,
+    ffprobeOutput,
+    hasSay,
+    hasEspeakNg,
+    hasEspeak,
+    hasWhisper,
+    hasFasterWhisper,
+    hasMlxWhisper,
+    hasWhisperCli,
+    whisperModelExists
+  ] = await Promise.all([
+    hostPython(VIDEO_PYTHON, probeCommand, platform),
+    probeCommand("ffmpeg", ["-version"]),
+    probeCommand("ffmpeg", ["-hide_banner", "-filters"]),
+    probeCommand("ffprobe", ["-version"]),
+    platform === "darwin" ? has("say") : Promise.resolve(false),
+    has("espeak-ng"),
+    has("espeak"),
+    has("whisper"),
+    has("faster-whisper"),
+    has("mlx_whisper"),
+    has("whisper-cli"),
+    whisperModelPath !== "" ? checkFile(whisperModelPath) : Promise.resolve(false)
   ]);
-  const value = {
-    python,
+  const localTtsEngine = hasSay ? "say" : hasEspeakNg ? "espeak-ng" : hasEspeak ? "espeak" : void 0;
+  const whisperCliReady = hasWhisperCli && whisperModelExists;
+  const localWhisperCli = hasWhisper ? "whisper" : hasFasterWhisper ? "faster-whisper" : hasMlxWhisper ? "mlx_whisper" : whisperCliReady ? "whisper-cli" : void 0;
+  const openaiApiKey = configured(env, "OPENAI_API_KEY");
+  const openaiAuto = openaiApiKey && configured(env, "TTS_API_URL");
+  return {
+    python: pythonResult.probe,
     ffmpeg: { ok: ffmpegOutput !== void 0, subtitles: /\bsubtitles\b/u.test(ffmpegFilters ?? "") },
     ffprobe: { ok: ffprobeOutput !== void 0 },
-    credentials: {
-      // Upstream falls back to the shared MIMO_API_KEY only when a per-service key is unset; 0.7.0 no
-      // longer reads MIMO_VIDEO_API_KEY (lib.py), so it does not count.
-      mimo: configured("MIMO_API_KEY", "MIMO_TTS_API_KEY", "MIMO_ASR_API_KEY"),
-      fish: configured("FISH_API_KEY"),
-      // index-tts fails before any request unless both are set (video-recap/references/index-tts.md).
-      indexTts: configured("INDEX_TTS_ENDPOINT") && configured("INDEX_TTS_VOICE"),
-      // Upstream accepts auto | mimo-tts | fish-audio | index-tts and defaults to auto (voiceover.py).
-      ttsProvider: (process.env.TTS_PROVIDER ?? "").trim().toLowerCase() || "auto"
+    tts: {
+      local: { ok: localTtsEngine !== void 0, engine: localTtsEngine },
+      fish: configured(env, "FISH_API_KEY", "FISH_AUDIO_API_KEY"),
+      openai: openaiAuto,
+      openaiApiKey,
+      indexTts: isValidIndexTtsEndpoint(env.INDEX_TTS_ENDPOINT),
+      indexTtsVoice: configured(env, "INDEX_TTS_VOICE")
+    },
+    asr: {
+      localWhisper: { ok: localWhisperCli !== void 0, cli: localWhisperCli },
+      remote: configured(env, "ASR_API_URL") && configured(env, "ASR_API_KEY")
     }
   };
-  videoPreflightCache = { expires: Date.now() + 3e4, value };
-  return value;
+}
+async function videoPreflight() {
+  if (videoPreflightCache !== void 0 && videoPreflightCache.expires > Date.now()) return videoPreflightCache.value;
+  videoPreflightInFlight ??= (async () => {
+    try {
+      const value = await probeVideoPreflight();
+      videoPreflightCache = { expires: Date.now() + 3e4, value };
+      return value;
+    } finally {
+      videoPreflightInFlight = void 0;
+    }
+  })();
+  return videoPreflightInFlight;
 }
 function send(response, status, value) {
   const body = `${JSON.stringify(value)}
@@ -1809,7 +2827,7 @@ function parseByteRange(value, size) {
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(requestedEnd) || requestedEnd < start) return void 0;
   return start >= size ? null : { start, end: Math.min(requestedEnd, size - 1) };
 }
-function mediaHeaders(mimeType, size, range2) {
+function mediaHeaders(mimeType, size, range2, extraHeaders = {}) {
   const start = range2?.start ?? 0;
   const end = range2?.end ?? size - 1;
   return {
@@ -1818,21 +2836,43 @@ function mediaHeaders(mimeType, size, range2) {
     "cache-control": "private, max-age=60",
     "accept-ranges": "bytes",
     ...range2 === void 0 ? {} : { "content-range": `bytes ${String(start)}-${String(end)}/${String(size)}` },
-    "x-content-type-options": "nosniff"
+    "x-content-type-options": "nosniff",
+    ...extraHeaders
   };
 }
-function sendMediaBytes(request, response, bytes, mimeType) {
-  const range2 = parseByteRange(typeof request.headers.range === "string" ? request.headers.range : void 0, bytes.byteLength);
+function stringifyHeaders(headers) {
+  const out = {};
+  for (const [key, value] of Object.entries(headers)) out[key] = String(value);
+  return out;
+}
+function jsonResponse(status, value) {
+  const body = `${JSON.stringify(value)}
+`;
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "content-length": String(Buffer.byteLength(body)),
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff"
+    }
+  });
+}
+function mediaBytesResponse(method, rangeHeader, bytes, mimeType, extraHeaders = {}) {
+  const range2 = parseByteRange(rangeHeader, bytes.byteLength);
   if (range2 === null) {
-    response.writeHead(416, { "content-range": `bytes */${String(bytes.byteLength)}`, "cache-control": "no-store" });
-    response.end();
-    return;
+    return new Response(null, {
+      status: 416,
+      headers: stringifyHeaders({ "content-range": `bytes */${String(bytes.byteLength)}`, "cache-control": "no-store", ...extraHeaders })
+    });
   }
   const start = range2?.start ?? 0;
   const end = range2?.end ?? bytes.byteLength - 1;
   const body = bytes.subarray(start, end + 1);
-  response.writeHead(range2 === void 0 ? 200 : 206, mediaHeaders(mimeType, bytes.byteLength, range2));
-  response.end(request.method === "HEAD" ? void 0 : Buffer.from(body));
+  return new Response(method === "HEAD" ? null : new Uint8Array(body), {
+    status: range2 === void 0 ? 200 : 206,
+    headers: stringifyHeaders(mediaHeaders(mimeType, bytes.byteLength, range2, extraHeaders))
+  });
 }
 async function hostWorkspaceFile(realm, target2, expectedSize) {
   const [root, path] = await Promise.all([
@@ -1844,45 +2884,86 @@ async function hostWorkspaceFile(realm, target2, expectedSize) {
   const local = await nodeStat(path);
   return local.isFile() && local.size === expectedSize ? path : void 0;
 }
-async function sendWorkspaceMedia(request, response, realm, target2, info, mimeType) {
+async function workspaceMediaResponse(method, rangeHeader, realm, target2, info, mimeType, signal, extraHeaders = {}, maxBytes = MEDIA_MAX_BYTES) {
   const expectedSize = info.size;
   if (expectedSize !== void 0) {
+    const range2 = parseByteRange(rangeHeader, expectedSize);
+    if (range2 === null) {
+      return new Response(null, {
+        status: 416,
+        headers: stringifyHeaders({ "content-range": `bytes */${String(expectedSize)}`, "cache-control": "no-store", ...extraHeaders })
+      });
+    }
     const processPath = await hostWorkspaceFile(realm, target2, expectedSize).catch(() => void 0);
     if (processPath !== void 0) {
-      const range2 = parseByteRange(typeof request.headers.range === "string" ? request.headers.range : void 0, expectedSize);
-      if (range2 === null) {
-        response.writeHead(416, { "content-range": `bytes */${String(expectedSize)}`, "cache-control": "no-store" });
-        response.end();
-        return;
-      }
-      response.writeHead(range2 === void 0 ? 200 : 206, mediaHeaders(mimeType, expectedSize, range2));
-      if (request.method === "HEAD") {
-        response.end();
-        return;
+      const headers = stringifyHeaders(mediaHeaders(mimeType, expectedSize, range2, extraHeaders));
+      if (method === "HEAD") {
+        return new Response(null, { status: range2 === void 0 ? 200 : 206, headers });
       }
       const stream = createReadStream(processPath, range2 === void 0 ? void 0 : { start: range2.start, end: range2.end });
-      request.once("close", () => {
-        if (!response.writableEnded) stream.destroy();
+      const onAbort = () => {
+        stream.destroy();
+      };
+      if (signal.aborted) onAbort();
+      else signal.addEventListener("abort", onAbort, { once: true });
+      stream.once("close", () => {
+        signal.removeEventListener("abort", onAbort);
       });
-      stream.on("error", () => {
-        if (!response.headersSent) response.destroy();
-        else response.end();
+      return new Response(Readable.toWeb(stream), {
+        status: range2 === void 0 ? 200 : 206,
+        headers
       });
-      stream.pipe(response);
-      return;
     }
-    if (expectedSize > MEDIA_MAX_BYTES) throw new WorkspaceHttpError(413, "\u8FDC\u7A0B\u5A92\u4F53\u8D85\u8FC7\u5DE5\u4F5C\u53F0\u56DE\u9000\u9884\u89C8\u5927\u5C0F\u9650\u5236\u3002");
+    if (method === "HEAD") {
+      return new Response(null, {
+        status: range2 === void 0 ? 200 : 206,
+        headers: stringifyHeaders(mediaHeaders(mimeType, expectedSize, range2, extraHeaders))
+      });
+    }
+    if (range2 !== void 0 && typeof realm.fs.readByteRange === "function") {
+      const length = range2.end - range2.start + 1;
+      if (length > maxBytes) throw new WorkspaceHttpError(413, "\u8FDC\u7A0B\u5A92\u4F53\u5206\u6BB5\u8D85\u8FC7\u5DE5\u4F5C\u53F0\u9884\u89C8\u5927\u5C0F\u9650\u5236\u3002");
+      const rawChunk = await realm.fs.readByteRange(target2, { offset: range2.start, length }, signal);
+      const chunk = rawChunk.byteLength > length ? rawChunk.subarray(0, length) : rawChunk;
+      if (chunk.byteLength === 0) {
+        return new Response(null, {
+          status: 416,
+          headers: stringifyHeaders({ "content-range": "bytes */*", "cache-control": "no-store", ...extraHeaders })
+        });
+      }
+      const actualRange = { start: range2.start, end: range2.start + chunk.byteLength - 1 };
+      const totalSize = chunk.byteLength < length ? actualRange.end + 1 : expectedSize;
+      return new Response(new Uint8Array(chunk), {
+        status: 206,
+        headers: stringifyHeaders(mediaHeaders(mimeType, totalSize, actualRange, extraHeaders))
+      });
+    }
+    if (expectedSize > maxBytes) throw new WorkspaceHttpError(413, "\u8FDC\u7A0B\u5A92\u4F53\u8D85\u8FC7\u5DE5\u4F5C\u53F0\u56DE\u9000\u9884\u89C8\u5927\u5C0F\u9650\u5236\u3002");
   }
-  sendMediaBytes(request, response, await realm.fs.readBytes(target2, void 0, MEDIA_MAX_BYTES), mimeType);
+  return mediaBytesResponse(method, rangeHeader, await realm.fs.readBytes(target2, signal, maxBytes), mimeType, extraHeaders);
 }
-async function jsonBody(request, maxBytes) {
+async function fetchJsonBody(request, maxBytes) {
+  const declared = request.headers.get("content-length");
+  if (declared !== null && Number(declared) > maxBytes) {
+    throw new WorkspaceHttpError(413, "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u5927\u3002");
+  }
   const chunks = [];
   let size = 0;
-  for await (const chunk of request) {
-    const value = Buffer.from(chunk);
-    size += value.byteLength;
-    if (size > maxBytes) throw new WorkspaceHttpError(413, "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u5927\u3002");
-    chunks.push(value);
+  if (request.body !== null) {
+    const reader = request.body.getReader();
+    try {
+      for (let item = await reader.read(); !item.done; item = await reader.read()) {
+        const value = Buffer.from(item.value);
+        size += value.byteLength;
+        if (size > maxBytes) {
+          await reader.cancel().catch(() => void 0);
+          throw new WorkspaceHttpError(413, "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u5927\u3002");
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
   }
   try {
     const value = JSON.parse(Buffer.concat(chunks).toString("utf8"));
@@ -1891,6 +2972,55 @@ async function jsonBody(request, maxBytes) {
   } catch {
     throw new WorkspaceHttpError(400, "\u8BF7\u6C42\u5FC5\u987B\u662F JSON \u5BF9\u8C61\u3002");
   }
+}
+async function writeFetchResponseToNode(request, response, fetchResponse, signal) {
+  const headers = {};
+  fetchResponse.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  response.writeHead(fetchResponse.status, headers);
+  if (request.method === "HEAD" || fetchResponse.body === null) {
+    await fetchResponse.body?.cancel().catch(() => void 0);
+    response.end();
+    return;
+  }
+  const reader = fetchResponse.body.getReader();
+  const cancel = () => {
+    void reader.cancel().catch(() => void 0);
+  };
+  if (signal.aborted) cancel();
+  else signal.addEventListener("abort", cancel, { once: true });
+  let cancelled = false;
+  try {
+    for (let item = await reader.read(); !item.done; item = await reader.read()) {
+      if (signal.aborted || response.destroyed) {
+        cancelled = true;
+        break;
+      }
+      if (!response.write(Buffer.from(item.value)) && !response.destroyed && !signal.aborted) {
+        await new Promise((accept) => {
+          const done = () => {
+            response.off("drain", done);
+            response.off("close", done);
+            accept();
+          };
+          response.once("drain", done);
+          response.once("close", done);
+        });
+        if (signal.aborted || response.destroyed) {
+          cancelled = true;
+          break;
+        }
+      }
+    }
+  } finally {
+    signal.removeEventListener("abort", cancel);
+    if (cancelled || response.destroyed || signal.aborted) {
+      await reader.cancel().catch(() => void 0);
+    }
+    reader.releaseLock();
+  }
+  if (!response.writableEnded && !response.destroyed) response.end();
 }
 function assertCreativePath(path, kind) {
   if (kind === "text" ? !editableCreativePath(path) : !MEDIA_TYPES.has(pathExtension(path))) {
@@ -1903,7 +3033,7 @@ function assertCreativePath(path, kind) {
 function mediaMimeTypeForPath(path) {
   return MEDIA_TYPES.get(pathExtension(path));
 }
-async function workspaceRealmForSession(context, rawId) {
+async function workspaceRealmForSession(context, rawId, signal) {
   if (rawId === "") throw new WorkspaceHttpError(400, "\u7F3A\u5C11 DSH sessionId\u3002");
   const lookup = context.typert.lookups.get("agent");
   if (lookup === void 0) throw new WorkspaceHttpError(503, "DSH Agent lookup \u5F53\u524D\u4E0D\u53EF\u7528\u3002");
@@ -1922,17 +3052,38 @@ async function workspaceRealmForSession(context, rawId) {
   const fs = agent.ctx.get("fs");
   const sandboxPolicy = agent.ctx.get("sandboxPolicy");
   if (fs === void 0 || sandboxPolicy === void 0) throw new WorkspaceHttpError(503, "DSH \u6587\u4EF6\u7CFB\u7EDF\u5F53\u524D\u4E0D\u53EF\u7528\u3002");
-  return { sessionId: rawId, agent, fs, sandboxPolicy, cwd, root: await fs.resolve(cwd) };
+  return { sessionId: rawId, agent, fs, sandboxPolicy, cwd, root: await fs.resolve(cwd, signal === void 0 ? void 0 : { signal }) };
 }
-async function workspaceRealm(context, url) {
+async function workspaceRealm(context, url, signal) {
   const rawId = url.searchParams.get("sessionId");
   if (rawId === null) throw new WorkspaceHttpError(400, "\u7F3A\u5C11 DSH sessionId\u3002");
-  return workspaceRealmForSession(context, rawId);
+  return workspaceRealmForSession(context, rawId, signal);
 }
-async function creativeTarget(realm, path, kind = "text") {
+async function assertNoSymlinkSegments(realm, relativePath, signal) {
+  if (typeof realm.fs.lstat !== "function") return;
+  const parts = relativePath.split("/");
+  const prefixes = [];
+  for (let index = 0; index < parts.length; index += 1) {
+    prefixes.push(parts.slice(0, index + 1).join("/"));
+  }
+  const results = await Promise.all(prefixes.map((prefix) => realm.fs.lstat(prefix, { cwd: realm.cwd }, signal)));
+  if (results.some((info) => info?.type === "symlink")) {
+    throw new WorkspaceHttpError(403, "\u5DE5\u4F5C\u53F0\u4E0D\u5141\u8BB8\u8BBF\u95EE\u7B26\u53F7\u94FE\u63A5\u8DEF\u5F84\u3002");
+  }
+}
+async function creativeTarget(realm, path, kind = "text", signal) {
   assertCreativePath(path, kind);
-  const target2 = await realm.fs.resolve(path, { cwd: realm.cwd });
-  if (!realm.fs.contains(realm.root, target2)) throw new WorkspaceHttpError(403, "\u6587\u4EF6\u8DEF\u5F84\u79BB\u5F00\u4E86 DSH \u5DE5\u4F5C\u76EE\u5F55\u3002");
+  await assertNoSymlinkSegments(realm, path, signal);
+  const creativeRootPath = creativeRootDirectory(path);
+  if (creativeRootPath === void 0) throw new WorkspaceHttpError(403, "\u6587\u4EF6\u8DEF\u5F84\u4E0D\u5728\u521B\u4F5C\u5DE5\u4F5C\u53F0\u4E2D\u3002");
+  const resolveOpts = signal === void 0 ? { cwd: realm.cwd } : { cwd: realm.cwd, signal };
+  const [creativeRoot, target2] = await Promise.all([
+    creativeRootPath === "" ? Promise.resolve(realm.root) : realm.fs.resolve(creativeRootPath, resolveOpts),
+    realm.fs.resolve(path, resolveOpts)
+  ]);
+  if (!realm.fs.contains(realm.root, creativeRoot) || !realm.fs.contains(creativeRoot, target2)) {
+    throw new WorkspaceHttpError(403, "\u6587\u4EF6\u8DEF\u5F84\u79BB\u5F00\u4E86\u521B\u4F5C\u5DE5\u4F5C\u53F0\u76EE\u5F55\u3002");
+  }
   return target2;
 }
 function requireRegularFile(info) {
@@ -1940,12 +3091,12 @@ function requireRegularFile(info) {
   if (info.type !== "file") throw new WorkspaceHttpError(415, "\u76EE\u6807\u4E0D\u662F\u53EF\u7F16\u8F91\u7684\u666E\u901A\u6587\u4EF6\u3002");
   return info;
 }
-async function readVersionedFile(fs, target2, maxBytes) {
+async function readVersionedFile(fs, target2, maxBytes, signal) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const before = requireRegularFile(await fs.stat(target2));
+    const before = requireRegularFile(await fs.stat(target2, signal));
     if (before.size !== void 0 && before.size > maxBytes) throw new WorkspaceHttpError(413, "\u6587\u4EF6\u8D85\u8FC7\u5DE5\u4F5C\u53F0\u5927\u5C0F\u9650\u5236\u3002");
-    const bytes = await fs.readBytes(target2, void 0, maxBytes);
-    const after = requireRegularFile(await fs.stat(target2));
+    const bytes = await fs.readBytes(target2, signal, maxBytes);
+    const after = requireRegularFile(await fs.stat(target2, signal));
     if (before.version !== after.version) continue;
     let content;
     try {
@@ -1957,81 +3108,159 @@ async function readVersionedFile(fs, target2, maxBytes) {
   }
   throw new WorkspaceHttpError(409, "\u6587\u4EF6\u6B63\u5728\u88AB\u4FEE\u6539\uFF0C\u8BF7\u91CD\u8BD5\u3002");
 }
-async function listFiles(realm) {
+async function isNovelBookDirectory(realm, bookTarget, signal) {
+  const entries = await realm.fs.listDir(bookTarget, signal).catch(() => []);
+  const dirs = new Set(entries.filter((entry) => entry.type === "directory").map((entry) => entry.name));
+  const files = new Set(entries.filter((entry) => entry.type === "file").map((entry) => entry.name));
+  if (dirs.has("\u6B63\u6587") || dirs.has("\u8FFD\u8E2A") || dirs.has("\u5927\u7EB2") || files.has("\u6B63\u6587.md")) return true;
+  if (files.has("\u8BBE\u5B9A.md") && files.has("\u5C0F\u8282\u5927\u7EB2.md")) return true;
+  if (dirs.has("\u8BBE\u5B9A")) {
+    const settingTarget = entries.find((entry) => entry.type === "directory" && entry.name === "\u8BBE\u5B9A")?.target;
+    if (settingTarget !== void 0) {
+      const settingEntries = await realm.fs.listDir(settingTarget, signal).catch(() => []);
+      if (settingEntries.some((entry) => entry.type === "file" && entry.name === "\u9898\u6750\u5B9A\u4F4D.md")) return true;
+    }
+  }
+  return false;
+}
+async function listFiles(realm, signal) {
   const files = [];
-  const walk = async (path, directory) => {
-    for (const entry of await realm.fs.listDir(directory)) {
-      if (entry.name.startsWith(".") || !realm.fs.contains(realm.root, entry.target)) continue;
+  const seenFiles = /* @__PURE__ */ new Set();
+  const visitedDirs = /* @__PURE__ */ new Set([realm.root.targetKey]);
+  let truncated = false;
+  const pushFile = (entry) => {
+    if (seenFiles.has(entry.path)) return true;
+    if (files.length >= FILE_LIMIT) {
+      truncated = true;
+      return false;
+    }
+    seenFiles.add(entry.path);
+    files.push(entry);
+    return true;
+  };
+  const walk = async (path, directory, depth) => {
+    if (truncated || depth > MAX_WALK_DEPTH || visitedDirs.has(directory.targetKey)) return;
+    visitedDirs.add(directory.targetKey);
+    const entries = await realm.fs.listDir(directory, signal);
+    for (const entry of entries) {
+      if (truncated) return;
+      if (entry.name.startsWith(".") || SKIPPED_SCAN_DIRECTORIES.has(entry.name) || !realm.fs.contains(realm.root, entry.target)) continue;
       const childPath = `${path}/${entry.name}`;
       if (entry.type === "directory") {
-        if (!skipVideoDirectory(childPath)) await walk(childPath, entry.target);
+        if (!skipVideoDirectory(childPath)) await walk(childPath, entry.target, depth + 1);
       } else if (entry.type === "file" && (editableCreativePath(childPath) || MEDIA_TYPES.has(pathExtension(entry.name)))) {
-        const info = entry.version === void 0 || entry.size === void 0 ? await realm.fs.stat(entry.target) : void 0;
+        const info = entry.version === void 0 || entry.size === void 0 ? await realm.fs.stat(entry.target, signal) : void 0;
         const version = entry.version ?? info?.version;
         const mimeType = MEDIA_TYPES.get(pathExtension(entry.name));
         if (version !== void 0 && (!childPath.startsWith(`${VIDEO_DIRECTORY}/`) || visibleVideoPath(childPath))) {
-          files.push({ path: childPath, bytes: entry.size ?? info?.size ?? 0, version, kind: mimeType === void 0 ? "text" : "media", mimeType });
+          if (!pushFile({ path: childPath, bytes: entry.size ?? info?.size ?? 0, version, kind: mimeType === void 0 ? "text" : "media", mimeType })) {
+            return;
+          }
         }
       }
-      if (files.length >= FILE_LIMIT) return;
     }
   };
+  const resolveOpts = signal === void 0 ? { cwd: realm.cwd } : { cwd: realm.cwd, signal };
   for (const directory of CREATIVE_DIRECTORIES) {
-    const target2 = await realm.fs.resolve(directory, { cwd: realm.cwd });
+    if (truncated) break;
+    const target2 = await realm.fs.resolve(directory, resolveOpts);
     if (!realm.fs.contains(realm.root, target2)) continue;
-    const info = await realm.fs.stat(target2);
-    if (info?.type === "directory") await walk(directory, target2);
-    if (files.length >= FILE_LIMIT) break;
+    const info = await realm.fs.stat(target2, signal);
+    if (info?.type === "directory") await walk(directory, target2, 1);
+  }
+  const bookRoots = /* @__PURE__ */ new Set();
+  const creativeDirSet = new Set(CREATIVE_DIRECTORIES);
+  const activeBookRaw = await workspaceText(realm, ".active-book", 4096, signal).catch(() => void 0);
+  const activeBookLine = activeBookRaw?.split(/\r?\n/u).map((line) => line.trim()).find((line) => line !== "");
+  const activeBook = activeBookLine?.replaceAll("\\", "/").replace(/^(?:\.\/)+/u, "").replace(/\/+$/u, "");
+  if (activeBook !== void 0 && activeBook !== "" && safeRelativePath(activeBook)) {
+    const parts = activeBook.split("/");
+    if (parts.length <= MAX_BOOK_PREFIX_DEPTH && !parts.some((segment) => SKIPPED_SCAN_DIRECTORIES.has(segment) || creativeDirSet.has(segment))) {
+      bookRoots.add(activeBook);
+    }
+  }
+  const rootEntries = await realm.fs.listDir(realm.root, signal).catch(() => []);
+  for (const entry of rootEntries) {
+    if (truncated) break;
+    if (entry.name.startsWith(".") || SKIPPED_SCAN_DIRECTORIES.has(entry.name) || !realm.fs.contains(realm.root, entry.target)) continue;
+    if (entry.type === "file" && isPublishRootFile(entry.name)) {
+      const info = entry.version === void 0 || entry.size === void 0 ? await realm.fs.stat(entry.target, signal) : void 0;
+      const version = entry.version ?? info?.version;
+      if (version !== void 0) pushFile({ path: entry.name, bytes: entry.size ?? info?.size ?? 0, version, kind: "text" });
+    } else if (entry.type === "directory" && !creativeDirSet.has(entry.name)) {
+      if (bookRoots.has(entry.name) || await isNovelBookDirectory(realm, entry.target, signal)) {
+        bookRoots.add(entry.name);
+      }
+    }
+  }
+  for (const book of [...bookRoots].sort((left, right) => left.localeCompare(right, "zh-Hans-CN"))) {
+    if (truncated) break;
+    const bookTarget = await realm.fs.resolve(book, resolveOpts).catch(() => void 0);
+    if (bookTarget === void 0 || !realm.fs.contains(realm.root, bookTarget)) continue;
+    const bookEntries = await realm.fs.listDir(bookTarget, signal).catch(() => []);
+    const storyDirSet = new Set(STORY_DIRECTORIES);
+    const shortFileSet = new Set(SHORT_STORY_FILES);
+    for (const entry of bookEntries) {
+      if (truncated) break;
+      if (entry.name.startsWith(".") || SKIPPED_SCAN_DIRECTORIES.has(entry.name) || !realm.fs.contains(bookTarget, entry.target)) continue;
+      const childPath = `${book}/${entry.name}`;
+      if (entry.type === "directory" && storyDirSet.has(entry.name)) {
+        await walk(childPath, entry.target, 2);
+      } else if (entry.type === "file" && (shortFileSet.has(entry.name) || isPublishRootFile(entry.name))) {
+        const info = entry.version === void 0 || entry.size === void 0 ? await realm.fs.stat(entry.target, signal) : void 0;
+        const version = entry.version ?? info?.version;
+        if (version !== void 0) pushFile({ path: childPath, bytes: entry.size ?? info?.size ?? 0, version, kind: "text" });
+      }
+    }
   }
   for (const path of ROOT_FILES) {
-    const target2 = await creativeTarget(realm, path);
-    const info = await realm.fs.stat(target2);
-    if (info?.type === "file") files.push({ path, bytes: info.size ?? 0, version: info.version, kind: "text" });
+    if (truncated) break;
+    const target2 = await creativeTarget(realm, path, "text", signal).catch(() => void 0);
+    if (target2 === void 0) continue;
+    const info = await realm.fs.stat(target2, signal);
+    if (info?.type === "file") pushFile({ path, bytes: info.size ?? 0, version: info.version, kind: "text" });
   }
-  return files.sort((left, right) => left.path.localeCompare(right.path, "zh-Hans-CN"));
+  return {
+    files: files.sort((left, right) => left.path.localeCompare(right.path, "zh-Hans-CN")),
+    truncated
+  };
 }
-async function metadataError(realm, files, path, maxBytes) {
+async function metadataError(realm, files, path, maxBytes, signal) {
   if (!files.some((file) => file.path === path)) return void 0;
   try {
-    const target2 = await creativeTarget(realm, path);
-    JSON.parse((await readVersionedFile(realm.fs, target2, maxBytes)).content);
+    const target2 = await creativeTarget(realm, path, "text", signal);
+    JSON.parse((await readVersionedFile(realm.fs, target2, maxBytes, signal)).content);
     return void 0;
   } catch (error) {
     return error instanceof SyntaxError ? `${path} \u4E0D\u662F\u6709\u6548\u7684 JSON\u3002` : `${path} \u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u3002`;
   }
-}
-function token(value) {
-  return Buffer.from(value, "utf8").toString("base64url");
-}
-function decodePreviewToken(value) {
-  if (!/^[A-Za-z0-9_-]+$/u.test(value)) throw new WorkspaceHttpError(400, "\u6E38\u620F\u9884\u89C8\u6807\u8BC6\u65E0\u6548\u3002");
-  const decoded = Buffer.from(value, "base64url").toString("utf8");
-  if (decoded === "" || token(decoded) !== value) throw new WorkspaceHttpError(400, "\u6E38\u620F\u9884\u89C8\u6807\u8BC6\u65E0\u6548\u3002");
-  return decoded;
 }
 function gameRoot(path) {
   const parts = path.split("/");
   const name2 = parts[1];
   return parts.length === 2 && parts[0] === GAME_DIRECTORY && name2 !== void 0 && name2 !== "" && name2 !== "." && name2 !== ".." && name2.length <= 128 && !name2.startsWith(".") && !name2.includes("\\");
 }
-async function workspaceText(realm, path, maxBytes) {
-  const target2 = await realm.fs.resolve(path, { cwd: realm.cwd });
-  if (!realm.fs.contains(realm.root, target2) || (await realm.fs.stat(target2))?.type !== "file") return void 0;
-  return (await readVersionedFile(realm.fs, target2, maxBytes)).content;
+async function workspaceText(realm, path, maxBytes, signal) {
+  const target2 = await realm.fs.resolve(path, signal === void 0 ? { cwd: realm.cwd } : { cwd: realm.cwd, signal });
+  if (!realm.fs.contains(realm.root, target2) || (await realm.fs.stat(target2, signal))?.type !== "file") return void 0;
+  return (await readVersionedFile(realm.fs, target2, maxBytes, signal)).content;
 }
-async function previewDigest(realm, projectRoot) {
+async function previewDigest(realm, projectRoot, signal) {
   const appPath = `${projectRoot}/build/app`;
-  const app = await realm.fs.resolve(appPath, { cwd: realm.cwd });
-  if (!realm.fs.contains(realm.root, app) || (await realm.fs.stat(app))?.type !== "directory") return { ready: false, version: "missing" };
+  const app = await realm.fs.resolve(appPath, signal === void 0 ? { cwd: realm.cwd } : { cwd: realm.cwd, signal });
+  if (!realm.fs.contains(realm.root, app) || (await realm.fs.stat(app, signal))?.type !== "directory") return { ready: false, version: "missing" };
   const entries = [];
+  const visited = /* @__PURE__ */ new Set();
   let ready = false;
-  const visit = async (directory, path) => {
-    for (const entry of await realm.fs.listDir(directory)) {
-      if (entry.name.startsWith(".") || !realm.fs.contains(app, entry.target)) continue;
+  const visit = async (directory, path, depth) => {
+    if (depth > MAX_WALK_DEPTH || visited.has(directory.targetKey)) return;
+    visited.add(directory.targetKey);
+    for (const entry of await realm.fs.listDir(directory, signal)) {
+      if (entry.name.startsWith(".") || SKIPPED_SCAN_DIRECTORIES.has(entry.name) || !realm.fs.contains(app, entry.target)) continue;
       const childPath = path === "" ? entry.name : `${path}/${entry.name}`;
-      if (entry.type === "directory") await visit(entry.target, childPath);
+      if (entry.type === "directory") await visit(entry.target, childPath, depth + 1);
       else if (entry.type === "file") {
-        const info = entry.version === void 0 ? await realm.fs.stat(entry.target) : void 0;
+        const info = entry.version === void 0 ? await realm.fs.stat(entry.target, signal) : void 0;
         const version = entry.version ?? info?.version;
         if (version !== void 0) entries.push(`${childPath}\0${version}`);
         if (childPath === "index.html") ready = true;
@@ -2039,7 +3268,7 @@ async function previewDigest(realm, projectRoot) {
       if (entries.length >= 5e3) return;
     }
   };
-  await visit(app, "");
+  await visit(app, "", 0);
   return { ready, version: createHash2("sha256").update(entries.sort().join("\n")).digest("hex").slice(0, 16) };
 }
 function gameProjectTitle(content, fallback) {
@@ -2047,7 +3276,7 @@ function gameProjectTitle(content, fallback) {
   const title = heading?.replace(/^#\s+/u, "").replace(/^(?:PRODUCT[_ ]BRIEF|产品简报)/iu, "").replace(/^[\s·・:：|—–-]+/u, "").trim().replace(/^《([^《》]+)》$/u, "$1").trim();
   return title || fallback;
 }
-async function workspaceGameProjects(realm, files, maxBytes) {
+async function workspaceGameProjects(realm, files, maxBytes, previewSecret, requestHost, signal) {
   const roots = [...new Set(files.flatMap((file) => {
     const parts = file.path.split("/");
     return parts[0] === GAME_DIRECTORY && parts[1] !== void 0 ? [`${GAME_DIRECTORY}/${parts[1]}`] : [];
@@ -2055,20 +3284,20 @@ async function workspaceGameProjects(realm, files, maxBytes) {
   return Promise.all(roots.map(async (root) => {
     const id = root.slice(`${GAME_DIRECTORY}/`.length);
     const [brief, preview] = await Promise.all([
-      workspaceText(realm, `${root}/PRODUCT_BRIEF.md`, maxBytes).catch(() => void 0),
-      previewDigest(realm, root).catch(() => ({ ready: false, version: "unavailable" }))
+      workspaceText(realm, `${root}/PRODUCT_BRIEF.md`, maxBytes, signal).catch(() => void 0),
+      previewDigest(realm, root, signal).catch(() => ({ ready: false, version: "unavailable" }))
     ]);
     return {
       id,
       root,
       title: gameProjectTitle(brief, id),
       previewReady: preview.ready,
-      previewUrl: preview.ready ? `/oh-story/game-preview/${token(realm.sessionId)}/${token(root)}/index.html` : void 0,
+      previewUrl: preview.ready ? `/oh-story/game-preview/${mintPreviewToken(previewSecret, { sessionId: realm.sessionId, root, host: requestHost })}/index.html` : void 0,
       previewVersion: preview.version
     };
   }));
 }
-async function workspaceVideoProjects(realm, files, maxBytes) {
+async function workspaceVideoProjects(realm, files, maxBytes, signal) {
   const roots = [...new Set(files.flatMap((file) => {
     const root = videoProjectRoot(file.path);
     return root === void 0 ? [] : [root];
@@ -2078,10 +3307,13 @@ async function workspaceVideoProjects(realm, files, maxBytes) {
       const matches = files.filter((file) => file.path.startsWith(`${root}/`) && file.path.split("/").at(-1) === name2);
       return matches.length === 1 ? matches[0]?.path : void 0;
     };
-    const readJson = async (name2) => {
+    const readTextFile = async (name2) => {
       const path = findPath(name2);
       if (path === void 0) return void 0;
-      const content = await workspaceText(realm, path, maxBytes).catch(() => void 0);
+      return workspaceText(realm, path, maxBytes, signal).catch(() => void 0);
+    };
+    const readJson = async (name2) => {
+      const content = await readTextFile(name2);
       if (content === void 0) return void 0;
       try {
         return JSON.parse(content);
@@ -2089,21 +3321,56 @@ async function workspaceVideoProjects(realm, files, maxBytes) {
         return void 0;
       }
     };
-    const [project, runManifest, assembly, narration, validatedClips, visualAudioBoard, storyPlan] = await Promise.all([
+    const [
+      project,
+      runManifest,
+      assembly,
+      narration,
+      validatedClips,
+      visualAudioBoard,
+      storyPlan,
+      timeline,
+      qualityCheck,
+      storyboard,
+      script,
+      brief,
+      editPlan
+    ] = await Promise.all([
       readJson("project.json"),
       readJson("recap_run_manifest.json"),
       readJson("assembly_manifest.json"),
       readJson("narration.json"),
       readJson("clip_plan_validated.json"),
       readJson("visual_audio_board.json"),
-      readJson("recap_story_plan.json")
+      readJson("recap_story_plan.json"),
+      readJson("timeline.json"),
+      readJson("check.json"),
+      readTextFile("STORYBOARD.md"),
+      readTextFile("SCRIPT.md"),
+      readTextFile("BRIEF.md"),
+      readTextFile("EDIT_PLAN.md")
     ]);
-    return summarizeVideoProject(root, files, { project, runManifest, assembly, narration, validatedClips, visualAudioBoard, storyPlan });
+    return summarizeVideoProject(root, files, {
+      project,
+      runManifest,
+      assembly,
+      narration,
+      validatedClips,
+      visualAudioBoard,
+      storyPlan,
+      timeline,
+      qualityCheck,
+      storyboard,
+      script,
+      brief,
+      editPlan
+    });
   }));
 }
 function previewContentType(path) {
   switch (extname2(path).toLocaleLowerCase()) {
     case ".html":
+    case ".htm":
       return "text/html; charset=utf-8";
     case ".css":
       return "text/css; charset=utf-8";
@@ -2112,6 +3379,12 @@ function previewContentType(path) {
       return "text/javascript; charset=utf-8";
     case ".json":
       return "application/json; charset=utf-8";
+    case ".webmanifest":
+      return "application/manifest+json; charset=utf-8";
+    case ".txt":
+      return "text/plain; charset=utf-8";
+    case ".xml":
+      return "application/xml; charset=utf-8";
     case ".svg":
       return "image/svg+xml";
     case ".png":
@@ -2123,22 +3396,64 @@ function previewContentType(path) {
       return "image/webp";
     case ".gif":
       return "image/gif";
+    case ".ico":
+      return "image/x-icon";
+    case ".avif":
+      return "image/avif";
     case ".woff":
       return "font/woff";
     case ".woff2":
       return "font/woff2";
+    case ".ttf":
+      return "font/ttf";
+    case ".otf":
+      return "font/otf";
     case ".wasm":
       return "application/wasm";
     case ".mp3":
       return "audio/mpeg";
     case ".ogg":
       return "audio/ogg";
+    case ".wav":
+      return "audio/wav";
+    case ".m4a":
+      return "audio/mp4";
+    case ".aac":
+      return "audio/aac";
+    case ".flac":
+      return "audio/flac";
+    case ".mp4":
+      return "video/mp4";
+    case ".webm":
+      return "video/webm";
+    case ".mov":
+      return "video/quicktime";
+    case ".mkv":
+      return "video/x-matroska";
+    case ".glb":
+      return "model/gltf-binary";
+    case ".gltf":
+      return "model/gltf+json";
     default:
       return "application/octet-stream";
   }
 }
-function previewAssetSources(request) {
-  const authority = request.headers.host;
+var GAME_PREVIEW_ERROR_BRIDGE = `<script>(function(){if(window.__ohStoryErrorBridge)return;window.__ohStoryErrorBridge=true;var post=function(m,f,l,c){try{if(window.parent&&window.parent!==window){window.parent.postMessage({type:"oh-story:game-preview-error",message:String(m||"Unknown error").slice(0,500),filename:typeof f==="string"?f.slice(0,300):undefined,lineno:typeof l==="number"&&isFinite(l)?l:undefined,colno:typeof c==="number"&&isFinite(c)?c:undefined},"*");}}catch(_){}};window.addEventListener("error",function(e){if(!e)return;var t=e.target;if(t&&t!==window&&(t.src||t.href)){post("Resource failed to load: "+(t.src||t.href),t.src||t.href);return;}post(e.message||(e.error&&e.error.message)||"Script error",e.filename,e.lineno,e.colno);},true);window.addEventListener("unhandledrejection",function(e){var r=e&&e.reason;post(r&&typeof r==="object"&&"message"in r?r.message:String(r||"Unhandled promise rejection"));});})();</script>`;
+function injectGamePreviewErrorBridge(html) {
+  if (html.includes("__ohStoryErrorBridge")) return html;
+  const openHead = /<head(?:\s[^>]*)?>/iu.exec(html);
+  if (openHead !== null) {
+    const at = openHead.index + openHead[0].length;
+    return `${html.slice(0, at)}${GAME_PREVIEW_ERROR_BRIDGE}${html.slice(at)}`;
+  }
+  const doctype = /^<!doctype[^>]*>\s*/iu.exec(html);
+  if (doctype !== null) {
+    return `${doctype[0]}${GAME_PREVIEW_ERROR_BRIDGE}${html.slice(doctype[0].length)}`;
+  }
+  return `${GAME_PREVIEW_ERROR_BRIDGE}${html}`;
+}
+function previewAssetSources(request, protocol = "http:") {
+  const authority = normalizePreviewAuthority(request.headers.host, protocol);
   if (authority === void 0) return "'none'";
   const prefix = `${authority}/oh-story/game-preview/`;
   return `http://${prefix} https://${prefix}`;
@@ -2158,44 +3473,97 @@ function previewContentSecurityPolicy(assets) {
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
-    "frame-ancestors 'self' http://127.0.0.1:* http://localhost:*"
+    "frame-ancestors 'self' http://127.0.0.1:* http://localhost:* https://127.0.0.1:* https://localhost:* http://[::1]:* https://[::1]:*"
   ].join("; ");
 }
-function sendPreview(request, response, path, bytes) {
-  const assets = previewAssetSources(request);
-  response.writeHead(200, {
-    "content-type": previewContentType(path),
-    "content-length": bytes.byteLength,
+function previewSecurityHeaders(request, protocol = "http:") {
+  const assets = previewAssetSources(request, protocol);
+  return {
     "cache-control": "no-store",
     "x-content-type-options": "nosniff",
     "cross-origin-resource-policy": "cross-origin",
     "access-control-allow-origin": "*",
     "content-security-policy": previewContentSecurityPolicy(assets)
-  });
-  response.end(bytes);
+  };
 }
-async function previewBytes(context, pathname) {
+function parsePreviewTarget(pathname, previewSecret) {
   let segments;
   try {
     segments = pathname.split("/").slice(3).map((segment) => decodeURIComponent(segment));
   } catch {
     throw new WorkspaceHttpError(400, "\u6E38\u620F\u9884\u89C8\u5730\u5740\u65E0\u6548\u3002");
   }
-  const session = segments.shift();
-  const project = segments.shift();
+  const signedToken = segments.shift();
   const path = segments.join("/") || "index.html";
-  if (session === void 0 || project === void 0 || !safeRelativePath(path)) throw new WorkspaceHttpError(400, "\u6E38\u620F\u9884\u89C8\u5730\u5740\u65E0\u6548\u3002");
-  const realm = await workspaceRealmForSession(context, decodePreviewToken(session));
-  const root = decodePreviewToken(project);
-  if (!gameRoot(root)) throw new WorkspaceHttpError(403, "\u6E38\u620F\u9879\u76EE\u8DEF\u5F84\u65E0\u6548\u3002");
-  const appRoot = await realm.fs.resolve(`${root}/build/app`, { cwd: realm.cwd });
-  const target2 = await realm.fs.resolve(`${root}/build/app/${path}`, { cwd: realm.cwd });
+  if (signedToken === void 0 || signedToken === "" || !safeRelativePath(path)) {
+    throw new WorkspaceHttpError(400, "\u6E38\u620F\u9884\u89C8\u5730\u5740\u65E0\u6548\u3002");
+  }
+  const verified = verifyPreviewToken(signedToken, previewSecret);
+  return { verified, path };
+}
+async function resolvePreviewAsset(context, parsed, signal) {
+  const { verified, path } = parsed;
+  const realm = await workspaceRealmForSession(context, verified.sessionId, signal);
+  const root = verified.root;
+  const fullRelative = `${root}/build/app/${path}`;
+  await assertNoSymlinkSegments(realm, fullRelative, signal);
+  const resolveOpts = { cwd: realm.cwd, signal };
+  const [appRoot, target2] = await Promise.all([
+    realm.fs.resolve(`${root}/build/app`, resolveOpts),
+    realm.fs.resolve(fullRelative, resolveOpts)
+  ]);
   if (!realm.fs.contains(realm.root, appRoot) || !realm.fs.contains(appRoot, target2)) {
     throw new WorkspaceHttpError(403, "\u9884\u89C8\u8D44\u6E90\u79BB\u5F00\u4E86\u6E38\u620F\u76EE\u5F55\u3002");
   }
-  const info = requireRegularFile(await realm.fs.stat(target2));
-  if (info.size !== void 0 && info.size > PREVIEW_FILE_LIMIT) throw new WorkspaceHttpError(413, "\u9884\u89C8\u8D44\u6E90\u8FC7\u5927\u3002");
-  return { path, bytes: await realm.fs.readBytes(target2, void 0, PREVIEW_FILE_LIMIT) };
+  const info = requireRegularFile(await realm.fs.stat(target2, signal));
+  const mimeType = previewContentType(path);
+  return { realm, target: target2, info, path, mimeType };
+}
+async function sendPreviewAsset(request, response, asset, signal, protocol = "http:") {
+  const security = previewSecurityHeaders(request, protocol);
+  if (asset.mimeType.startsWith("audio/") || asset.mimeType.startsWith("video/")) {
+    const fetchResponse = await workspaceMediaResponse(
+      request.method ?? "GET",
+      typeof request.headers.range === "string" ? request.headers.range : void 0,
+      asset.realm,
+      asset.target,
+      asset.info,
+      asset.mimeType,
+      signal,
+      security,
+      PREVIEW_FILE_LIMIT
+    );
+    await writeFetchResponseToNode(request, response, fetchResponse, signal);
+    return;
+  }
+  if (asset.info.size !== void 0 && asset.info.size > PREVIEW_FILE_LIMIT) {
+    throw new WorkspaceHttpError(413, "\u9884\u89C8\u8D44\u6E90\u8FC7\u5927\u3002");
+  }
+  if (request.method === "HEAD" && !asset.mimeType.startsWith("text/html") && asset.info.size !== void 0) {
+    response.writeHead(200, {
+      "content-type": asset.mimeType,
+      "content-length": asset.info.size,
+      ...security
+    });
+    response.end();
+    return;
+  }
+  const rawBytes = await asset.realm.fs.readBytes(asset.target, signal, PREVIEW_FILE_LIMIT);
+  let body = rawBytes;
+  if (asset.mimeType.startsWith("text/html")) {
+    try {
+      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(rawBytes);
+      body = Buffer.from(injectGamePreviewErrorBridge(decoded), "utf8");
+    } catch {
+      body = rawBytes;
+    }
+  }
+  response.writeHead(200, {
+    "content-type": asset.mimeType,
+    "content-length": body.byteLength,
+    ...security
+  });
+  response.end(request.method === "HEAD" ? void 0 : body);
 }
 function mapFsError(error) {
   if (!(error instanceof FsError)) return void 0;
@@ -2219,98 +3587,312 @@ function mapFsError(error) {
       return new WorkspaceHttpError(500, "DSH \u6587\u4EF6\u7CFB\u7EDF\u64CD\u4F5C\u5931\u8D25\u3002");
   }
 }
-async function handle(context, request, response, options) {
+function errorToFetchResponse(context, error) {
+  const mapped = error instanceof WorkspaceHttpError ? error : mapFsError(error);
+  if (mapped === void 0) context.logger("oh-story").error("workspace route failed", error);
+  return jsonResponse(mapped?.status ?? 500, { error: mapped?.message ?? "Oh Story workspace operation failed." });
+}
+function assertAdmittedWorkspaceRequest(context, request, options) {
+  const connection = context.get("connection");
+  if (connection !== void 0) {
+    const admission = connection.admit(request);
+    if ("rejection" in admission) {
+      throw new WorkspaceHttpError(
+        admission.rejection,
+        admission.rejection === 401 ? "\u9700\u8981\u901A\u8FC7 DSH \u767B\u5F55\u9A8C\u8BC1\u3002" : "\u8BF7\u6C42\u6765\u6E90\u4E0D\u53D7\u4FE1\u4EFB\u3002"
+      );
+    }
+    const peer = admission.peer;
+    if (peer?.principal !== void 0 && peer.principal.kind !== "owner") {
+      throw new WorkspaceHttpError(403, "\u4EC5\u5DE5\u4F5C\u533A\u6240\u6709\u8005\u53EF\u8BBF\u95EE\u521B\u4F5C\u5DE5\u4F5C\u53F0\u63A5\u53E3\u3002");
+    }
+    return;
+  }
+  const webServer = context.get("webServer");
+  if (!isTrustedWorkspaceRequest(request, options.trustedHosts ?? [], webServer?.host, webServer?.protocol ?? "http:")) {
+    throw new WorkspaceHttpError(403, "\u8BF7\u6C42\u6765\u6E90\u4E0D\u53D7\u4FE1\u4EFB\u3002");
+  }
+}
+async function handleStylesheetFetch(request) {
+  const asset = await loadWorkbenchStylesheet();
+  if (asset.bytes.byteLength === 0) {
+    return new Response("/* workbench stylesheet unavailable */\n", {
+      status: 503,
+      headers: {
+        "content-type": "text/css; charset=utf-8",
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff"
+      }
+    });
+  }
+  const url = new URL(request.url);
+  const versionMatched = url.searchParams.get("v") === asset.version;
+  const cacheControl = versionMatched ? "private, max-age=31536000, immutable" : "no-cache";
+  const baseHeaders = {
+    "content-type": "text/css; charset=utf-8",
+    "cache-control": cacheControl,
+    etag: asset.etag,
+    "x-content-type-options": "nosniff"
+  };
+  const ifNoneMatch = request.headers.get("if-none-match");
+  if (ifNoneMatch !== null && ifNoneMatch.split(",").map((item) => item.trim()).includes(asset.etag)) {
+    return new Response(null, { status: 304, headers: baseHeaders });
+  }
+  return new Response(request.method === "HEAD" ? null : new Uint8Array(asset.bytes), {
+    status: 200,
+    headers: {
+      ...baseHeaders,
+      "content-length": String(asset.bytes.byteLength)
+    }
+  });
+}
+async function handleApiFetch(context, routeName, request, options, previewSecret) {
+  const signal = request.signal;
+  const url = new URL(request.url);
   try {
-    const url = new URL(request.url ?? "/", "http://127.0.0.1");
-    const gamePreview = url.pathname.startsWith("/oh-story/game-preview/");
-    const trusted = gamePreview ? isTrustedPreviewNavigation(request, options.trustedHosts ?? []) : isTrustedWorkspaceRequest(request, options.trustedHosts ?? []);
-    if (!trusted) throw new WorkspaceHttpError(403, "\u8BF7\u6C42\u6765\u6E90\u4E0D\u53D7\u4FE1\u4EFB\u3002");
-    if (gamePreview && request.method === "GET") {
-      const preview = await previewBytes(context, url.pathname);
-      sendPreview(request, response, preview.path, preview.bytes);
-      return;
+    if (routeName === "workbench.css" && (request.method === "GET" || request.method === "HEAD")) {
+      return await handleStylesheetFetch(request);
     }
-    if (url.pathname === "/oh-story/config" && request.method === "GET") {
-      send(response, 200, { welcomeGuide: options.welcomeGuide?.() ?? true });
-      return;
+    if (routeName === "config" && request.method === "GET") {
+      return jsonResponse(200, { welcomeGuide: options.welcomeGuide?.() ?? true });
     }
-    if (url.pathname === "/oh-story/workspace" && request.method === "GET") {
-      const realm = await workspaceRealm(context, url);
-      const files = await listFiles(realm);
-      const [trackingError, dramaError, games, videos] = await Promise.all([
-        metadataError(realm, files, "\u8FFD\u8E2A/_tracking-state.json", options.maxBytes),
-        metadataError(realm, files, "short-drama.json", options.maxBytes),
-        workspaceGameProjects(realm, files, options.maxBytes),
-        workspaceVideoProjects(realm, files, options.maxBytes)
+    if (routeName === "workspace" && request.method === "GET") {
+      const realm = await workspaceRealm(context, url, signal);
+      const { files, truncated } = await listFiles(realm, signal);
+      const trackingPaths = files.map((file) => file.path).filter((path) => path === "\u8FFD\u8E2A/_tracking-state.json" || path.endsWith("/\u8FFD\u8E2A/_tracking-state.json"));
+      const requestHost = request.headers.get("host") ?? void 0;
+      const [trackingErrors, dramaError, games, videos] = await Promise.all([
+        Promise.all(trackingPaths.map((path) => metadataError(realm, files, path, options.maxBytes, signal))),
+        metadataError(realm, files, "short-drama.json", options.maxBytes, signal),
+        workspaceGameProjects(realm, files, options.maxBytes, previewSecret, requestHost, signal),
+        workspaceVideoProjects(realm, files, options.maxBytes, signal)
       ]);
-      const metadataErrors = [trackingError, dramaError].filter((value) => value !== void 0);
-      send(response, 200, {
+      const metadataErrors = [...trackingErrors, dramaError].filter((value) => value !== void 0);
+      const payload = {
         cwd: realm.cwd,
+        openEmptyWorkbench: options.openEmptyWorkbench ?? true,
         files,
+        truncated,
         games,
         videos,
         metadataErrors,
-        openEmptyWorkbench: options.openEmptyWorkbench ?? true,
         welcomeGuide: options.welcomeGuide?.() ?? true
-      });
-      return;
+      };
+      return jsonResponse(200, payload);
     }
-    if (url.pathname === "/oh-story/video-preflight" && request.method === "GET") {
-      send(response, 200, await videoPreflight());
-      return;
+    if (routeName === "video-preflight" && request.method === "GET") {
+      return jsonResponse(200, await videoPreflight());
     }
-    if (url.pathname === "/oh-story/drama-preflight" && request.method === "GET") {
-      send(response, 200, await dramaPreflight());
-      return;
+    if (routeName === "drama-preflight" && request.method === "GET") {
+      return jsonResponse(200, await dramaPreflight());
     }
-    if (url.pathname === "/oh-story/file" && request.method === "GET") {
-      const realm = await workspaceRealm(context, url);
+    if (routeName === "file" && request.method === "GET") {
+      const realm = await workspaceRealm(context, url, signal);
       const path = url.searchParams.get("path");
       if (path === null) throw new WorkspaceHttpError(400, "\u7F3A\u5C11\u6587\u4EF6\u8DEF\u5F84\u3002");
-      const file = await readVersionedFile(realm.fs, await creativeTarget(realm, path), options.maxBytes);
-      send(response, 200, { path, ...file });
-      return;
+      const file = await readVersionedFile(realm.fs, await creativeTarget(realm, path, "text", signal), options.maxBytes, signal);
+      return jsonResponse(200, { path, ...file });
     }
-    if (url.pathname === "/oh-story/media" && (request.method === "GET" || request.method === "HEAD")) {
-      const realm = await workspaceRealm(context, url);
+    if (routeName === "media" && (request.method === "GET" || request.method === "HEAD")) {
+      const realm = await workspaceRealm(context, url, signal);
       const path = url.searchParams.get("path");
       if (path === null) throw new WorkspaceHttpError(400, "\u7F3A\u5C11\u5A92\u4F53\u6587\u4EF6\u8DEF\u5F84\u3002");
-      const target2 = await creativeTarget(realm, path, "media");
-      const info = requireRegularFile(await realm.fs.stat(target2));
-      await sendWorkspaceMedia(request, response, realm, target2, info, mediaMimeTypeForPath(path));
-      return;
+      const target2 = await creativeTarget(realm, path, "media", signal);
+      const info = requireRegularFile(await realm.fs.stat(target2, signal));
+      return await workspaceMediaResponse(
+        request.method,
+        request.headers.get("range") ?? void 0,
+        realm,
+        target2,
+        info,
+        mediaMimeTypeForPath(path),
+        signal
+      );
     }
-    if (url.pathname === "/oh-story/file" && request.method === "PUT") {
-      const realm = await workspaceRealm(context, url);
+    if (routeName === "file" && (request.method === "PUT" || request.method === "POST")) {
+      const realm = await workspaceRealm(context, url, signal);
       const path = url.searchParams.get("path");
       if (path === null) throw new WorkspaceHttpError(400, "\u7F3A\u5C11\u6587\u4EF6\u8DEF\u5F84\u3002");
-      const input = await jsonBody(request, options.maxBytes * 6 + 1024);
+      const input = await fetchJsonBody(request, options.maxBytes * 6 + 1024);
       if (typeof input.content !== "string") throw new WorkspaceHttpError(400, "content \u5FC5\u987B\u662F\u5B57\u7B26\u4E32\u3002");
       if (typeof input.baseVersion !== "string" || input.baseVersion === "") throw new WorkspaceHttpError(400, "baseVersion \u5FC5\u987B\u662F\u6709\u6548\u7248\u672C\u3002");
       if (Buffer.byteLength(input.content) > options.maxBytes) throw new WorkspaceHttpError(413, "\u6587\u4EF6\u8D85\u8FC7\u5DE5\u4F5C\u53F0\u5927\u5C0F\u9650\u5236\u3002");
       const outcome = await realm.fs.writeText(
-        await creativeTarget(realm, path),
+        await creativeTarget(realm, path, "text", signal),
         input.content,
         { kind: "replaceIfVersion", version: input.baseVersion },
-        void 0,
+        signal,
         realm.sandboxPolicy.resolve({ session: realm.agent.session })
       );
-      send(response, 200, { path, content: outcome.after, bytes: Buffer.byteLength(outcome.after), version: outcome.version });
+      return jsonResponse(200, { path, content: outcome.after, bytes: Buffer.byteLength(outcome.after), version: outcome.version });
+    }
+    return jsonResponse(404, { error: "Oh Story route not found." });
+  } catch (error) {
+    return errorToFetchResponse(context, error);
+  }
+}
+async function nodeRequestToFetch(request, url, signal, maxBytes) {
+  const method = request.method ?? "GET";
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(request.headers)) {
+    if (typeof value === "string") headers.append(key, value);
+    else if (Array.isArray(value)) for (const item of value) headers.append(key, item);
+  }
+  if (method === "GET" || method === "HEAD") {
+    return new Request(url, { method, headers, signal });
+  }
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    const value = Buffer.from(chunk);
+    size += value.byteLength;
+    if (size > maxBytes) throw new WorkspaceHttpError(413, "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u5927\u3002");
+    chunks.push(value);
+  }
+  return new Request(url, {
+    method,
+    headers,
+    body: Buffer.concat(chunks),
+    signal
+  });
+}
+async function handle(context, request, response, options, previewSecret) {
+  const abortController = new AbortController();
+  response.once("close", () => {
+    if (!response.writableEnded) abortController.abort();
+  });
+  const { signal } = abortController;
+  try {
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
+    const gamePreview = url.pathname.startsWith("/oh-story/game-preview/");
+    if (gamePreview) {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        send(response, 405, { error: "Method not allowed." });
+        return;
+      }
+      const parsed = parsePreviewTarget(url.pathname, previewSecret);
+      const webServer = context.get("webServer");
+      const protocol = webServer?.protocol ?? "http:";
+      const trusted = parsed.verified.host !== void 0 ? isBoundPreviewAssetRequest(request, parsed.verified.host, protocol) : isTrustedPreviewAssetRequest(request, options.trustedHosts ?? [], webServer?.host, protocol);
+      if (!trusted) {
+        throw new WorkspaceHttpError(403, "\u8BF7\u6C42\u6765\u6E90\u4E0D\u53D7\u4FE1\u4EFB\u3002");
+      }
+      const asset = await resolvePreviewAsset(context, parsed, signal);
+      await sendPreviewAsset(request, response, asset, signal, protocol);
       return;
     }
-    send(response, 404, { error: "Oh Story route not found." });
+    assertAdmittedWorkspaceRequest(context, request, options);
+    const prefix = "/oh-story/";
+    if (!url.pathname.startsWith(prefix)) {
+      send(response, 404, { error: "Oh Story route not found." });
+      return;
+    }
+    const routeName = url.pathname.slice(prefix.length);
+    const fetchRequest = await nodeRequestToFetch(request, url, signal, options.maxBytes * 6 + 1024);
+    const fetchResponse = await handleApiFetch(context, routeName, fetchRequest, options, previewSecret);
+    await writeFetchResponseToNode(request, response, fetchResponse, signal);
   } catch (error) {
+    if (response.writableEnded || response.destroyed) return;
     const mapped = error instanceof WorkspaceHttpError ? error : mapFsError(error);
     if (mapped === void 0) context.logger("oh-story").error("workspace route failed", error);
     send(response, mapped?.status ?? 500, { error: mapped?.message ?? "Oh Story workspace operation failed." });
   }
 }
+function buildConnectionFetchRoutes(context, options, previewSecret) {
+  return [
+    {
+      path: "/api/oh-story/config",
+      methods: ["GET"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "config", request, options, previewSecret)
+    },
+    {
+      path: "/api/oh-story/workspace",
+      methods: ["GET"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "workspace", request, options, previewSecret)
+    },
+    {
+      path: "/api/oh-story/file",
+      methods: ["GET", "POST"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "file", request, options, previewSecret)
+    },
+    {
+      path: "/api/oh-story/media",
+      methods: ["GET", "HEAD"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "media", request, options, previewSecret)
+    },
+    {
+      path: "/api/oh-story/drama-preflight",
+      methods: ["GET"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "drama-preflight", request, options, previewSecret)
+    },
+    {
+      path: "/api/oh-story/video-preflight",
+      methods: ["GET"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "video-preflight", request, options, previewSecret)
+    },
+    {
+      path: WORKBENCH_CSS_API_PATH,
+      methods: ["GET", "HEAD"],
+      requestBody: "buffered",
+      fetch: (request) => handleApiFetch(context, "workbench.css", request, options, previewSecret)
+    }
+  ];
+}
 function registerWorkspaceRoute(context, options) {
-  context.effect(() => context.webServer.register({
-    kind: "prefix",
-    path: "/oh-story",
-    handler: (request, response) => handle(context, request, response, options)
-  }), "oh-story: DSH-session workspace API");
+  const previewSecret = options.previewTokenSecret ?? createPreviewTokenSecret();
+  const fetchRoutes = buildConnectionFetchRoutes(context, options, previewSecret);
+  let mountedOnConnection = false;
+  void loadWorkbenchStylesheet().catch(() => void 0);
+  const registerFetchRoutesOn = (conn) => {
+    const fetchService = conn.fetch;
+    if (fetchService === void 0 || typeof fetchService.register !== "function") return void 0;
+    const disposers = fetchRoutes.map((route) => fetchService.register(route));
+    mountedOnConnection = true;
+    return async () => {
+      mountedOnConnection = false;
+      await Promise.all(disposers.map((dispose) => Promise.resolve(dispose()).catch(() => void 0)));
+    };
+  };
+  if (typeof context.inject === "function") {
+    void context.inject(["connection"], (connCtx) => {
+      const conn = connCtx.get("connection");
+      if (conn?.fetch?.register === void 0) return;
+      connCtx.effect(() => registerFetchRoutesOn(conn) ?? (() => {
+      }), "oh-story: DSH connection.fetch API");
+    });
+  }
+  if (typeof context.on === "function") {
+    context.on("webserver/index-inject", (table) => {
+      const apiPrefix = mountedOnConnection ? "api/oh-story" : "oh-story";
+      const baseHref = `${apiPrefix}/workbench.css`;
+      const href = cachedWorkbenchStylesheet !== void 0 ? `${baseHref}?v=${cachedWorkbenchStylesheet.version}` : baseHref;
+      table.push({
+        kind: "html",
+        placement: "head",
+        html: `<link id="oh-story-workbench-css" rel="stylesheet" href="${href}" data-oh-story-api-prefix="${apiPrefix}">`
+      });
+    });
+  }
+  context.effect(() => {
+    const disposeWeb = context.webServer.register({
+      kind: "prefix",
+      path: "/oh-story",
+      handler: (request, response) => handle(context, request, response, options, previewSecret)
+    });
+    const directConn = typeof context.inject === "function" ? void 0 : context.get("connection");
+    const disposeConn = directConn !== void 0 ? registerFetchRoutesOn(directConn) : void 0;
+    return async () => {
+      disposeWeb();
+      await disposeConn?.();
+      resetPreflightCaches();
+    };
+  }, "oh-story: DSH-session workspace API");
 }
 
 // src/index.ts
@@ -2339,14 +3921,24 @@ async function apply(context, config = {}) {
   context.skills.registerProvider(() => createVideoRecapSkillProvider());
   registerOhStoryHooks(context);
   registerOhStoryProductionTool(context);
-  await registerOhStoryRoleTool(context);
   registerWorkspaceRoute(context, {
     maxBytes: config.editorMaxBytes ?? 2097152,
     trustedHosts,
     openEmptyWorkbench: config.openEmptyWorkbench ?? true,
     welcomeGuide: () => readWelcomeGuideConfig(config.welcomeGuide)
   });
-  await ensureDramaAdapterConfig(defaultDramaSkillRoot(), { python: (await hostPython(DRAMA_PYTHON)).command });
+  context.effect(() => {
+    let disposed = false;
+    void hostPython(DRAMA_PYTHON).then((probe) => {
+      if (disposed || context.fiber.uid === null) return;
+      return ensureDramaAdapterConfig(defaultDramaSkillRoot(), { python: probe.command });
+    }).catch(() => void 0);
+    return () => {
+      disposed = true;
+    };
+  }, "oh-story: drama adapter prewarm");
+  await registerOhStoryRoleTool(context);
+  if (context.fiber.uid === null) return;
 }
 var index_default = { name, inject, Config, apply };
 export {
@@ -2357,6 +3949,8 @@ export {
   OH_STORY_REFERENCE_TOOL_NAME,
   OH_STORY_ROLE_NAMES,
   OH_STORY_ROLE_TOOL_NAME,
+  WORKBENCH_CSS_API_PATH,
+  WORKBENCH_CSS_FALLBACK_PATH,
   apply,
   bundledReferenceGuard,
   createDramaSkillProvider,
@@ -2372,6 +3966,7 @@ export {
   ensureDramaAdapterConfig,
   inject,
   loadBundledRole,
+  loadWorkbenchStylesheet,
   name,
   parseBundledSkill,
   readWelcomeGuideConfig,

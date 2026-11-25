@@ -35,16 +35,22 @@ export declare class WelcomeGuideController {
     ensureFallbackHostConfig(load?: () => Promise<boolean>): void;
     setEnabled(enabled: boolean): Promise<boolean>;
 }
+export interface WelcomeStarterCard {
+    readonly id: "story" | "drama" | "game" | "video";
+    readonly title: string;
+    readonly subtitle: string;
+    readonly prompt: string;
+}
+export declare const WELCOME_STARTERS: readonly WelcomeStarterCard[];
 /** How to reach the workbench from a DSH that has no creative work open yet. */
-export declare function WelcomeGuide({ styles, onDismiss, dismissing }?: {
-    readonly styles?: string | undefined;
+export declare function WelcomeGuide({ onDismiss, dismissing, onStartPrompt }?: {
     readonly onDismiss?: (() => void) | undefined;
     readonly dismissing?: boolean | undefined;
+    readonly onStartPrompt?: ((prompt: string) => boolean) | undefined;
 }): import("react/jsx-runtime").JSX.Element;
-export declare function OhStoryPluginConfig({ view, controller, styles }: {
+export declare function OhStoryPluginConfig({ view, controller }: {
     readonly view?: "summary" | "page" | undefined;
     readonly controller: WelcomeGuideController;
-    readonly styles?: string | undefined;
 }): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=welcome-guide.d.ts.map

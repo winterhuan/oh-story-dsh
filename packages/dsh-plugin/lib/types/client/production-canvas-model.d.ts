@@ -10,6 +10,14 @@ export interface ProductionCanvasNode {
     readonly description?: string | undefined;
     readonly prompt?: string | undefined;
     readonly videoPrompt?: string | undefined;
+    /** True for VISUAL-* entries that do not yet have a corresponding IMG-* entry in 图片提示词.md. */
+    readonly needsImagePrompt?: boolean | undefined;
+    /** Single-shot MOTION-* id when this shot has a video prompt entry. */
+    readonly motionId?: string | undefined;
+    /** Multi-shot GROUP-* id when this shot belongs to a video group. */
+    readonly groupId?: string | undefined;
+    /** Canonical video production source_entry (`GROUP-*` preferred over `MOTION-*`). */
+    readonly videoTargetId?: string | undefined;
     readonly initial: CanvasPoint;
     readonly width: number;
     readonly height: number;

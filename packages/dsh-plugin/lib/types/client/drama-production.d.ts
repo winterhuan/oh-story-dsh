@@ -15,6 +15,28 @@ export interface DramaDocumentTarget {
     readonly offset: number;
     readonly id: string;
 }
+export interface DramaMotionGroup {
+    readonly id: string;
+    readonly title: string;
+    readonly path: string;
+    readonly offset: number;
+    readonly memberMotionIds: readonly string[];
+    readonly memberShotIds: readonly string[];
+    readonly durationSeconds?: number | undefined;
+    readonly reason?: string | undefined;
+    readonly prompt?: string | undefined;
+}
+export interface DramaMusicPrompt {
+    readonly id: string;
+    readonly title: string;
+    readonly path: string;
+    readonly offset: number;
+    readonly range?: string | undefined;
+    readonly purpose?: string | undefined;
+    readonly mood?: string | undefined;
+    readonly avoid?: string | undefined;
+    readonly prompt?: string | undefined;
+}
 export interface DramaShot {
     readonly id: string;
     readonly title: string;
@@ -31,6 +53,7 @@ export interface DramaShot {
     readonly references: readonly string[];
     readonly keyframePrompt?: string | undefined;
     readonly motion?: DramaMotionPrompt | undefined;
+    readonly group?: DramaMotionGroup | undefined;
 }
 export interface DramaAsset {
     readonly id: string;
@@ -70,6 +93,8 @@ export interface DramaEpisodeProduction {
     readonly assets: readonly DramaAsset[];
     readonly visualAssets: readonly DramaVisualAsset[];
     readonly motions: readonly DramaMotionPrompt[];
+    readonly groups: readonly DramaMotionGroup[];
+    readonly music: readonly DramaMusicPrompt[];
     readonly targets: ReadonlyMap<string, DramaDocumentTarget>;
     readonly documentPaths: readonly string[];
     readonly diagnostics: readonly DramaProductionDiagnostic[];
@@ -83,7 +108,13 @@ export declare function parseEpisodeProduction(documents: Readonly<Record<string
 export declare function parseStoryboard(path: string, content: string): DramaShot[];
 export declare function parseImagePrompts(path: string, content: string): DramaAsset[];
 export declare function parseVideoPrompts(path: string, content: string): DramaMotionPrompt[];
+export declare function parseVideoGroups(path: string, content: string): DramaMotionGroup[];
+export declare function parseMusicPrompts(path: string, content: string): DramaMusicPrompt[];
 export declare function parseVisualAssets(path: string, content: string): DramaVisualAsset[];
+/** Known episode production target IDs for matching workspace media paths (longest first). */
+export declare function productionKnownTargets(production: DramaEpisodeProduction): string[];
+/** Map a matched media target ID (`MOTION-*`, `GROUP-*`, `MUSIC-*`, etc.) to its canonical display target(s). */
+export declare function resolveMediaTargetIds(production: DramaEpisodeProduction, matchedId: string): string[];
 export declare function productionCompleteness(shot: DramaShot): {
     readonly keyframe: boolean;
     readonly motion: boolean;

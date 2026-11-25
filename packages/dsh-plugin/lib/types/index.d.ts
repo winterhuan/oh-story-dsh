@@ -6,9 +6,11 @@ export { createOhStoryRoleTool, OH_STORY_ROLE_TOOL_NAME, registerOhStoryRoleTool
 export { createOhStoryProductionTool, registerOhStoryProductionTool } from "./production-tool.js";
 export { OH_STORY_PRODUCTION_TOOL_NAME, validateProductionIntent, type ProductionIntentArgs, type ValidatedProductionIntent } from "./production-intent.js";
 export { bundledReferenceGuard, createOhStoryReferenceTool, OH_STORY_REFERENCE_TOOL_NAME } from "./reference-tool.js";
-export { registerWorkspaceRoute } from "./workspace-route.js";
+export { loadWorkbenchStylesheet, registerWorkspaceRoute, WORKBENCH_CSS_API_PATH, WORKBENCH_CSS_FALLBACK_PATH, type DramaPreflightSummary, type GamePreviewErrorMessage, type GameProjectSummary, type PreviewTokenPayload, type VideoPreflightStatus, type WorkbenchStylesheetAsset, type WorkspaceFile, type WorkspacePayload } from "./workspace-route.js";
 export { registerOhStoryHooks } from "./native-hooks.js";
-export { DRAMA_ADAPTER_CONFIG_ENV, DRAMA_ADAPTERS, dramaAdapterConfigPath, dramaAdapterStatuses, ensureDramaAdapterConfig } from "./drama-adapters.js";
+export { DRAMA_ADAPTER_CONFIG_ENV, DRAMA_ADAPTERS, dramaAdapterConfigPath, dramaAdapterStatuses, ensureDramaAdapterConfig, type DramaAdapterOptionalEnvStatus, type DramaAdapterStatus } from "./drama-adapters.js";
+export type { VideoArtifactSummary, VideoCheckItemStatus, VideoPreviewAsset, VideoProjectSummary, VideoQualityCheckItem, VideoQualityCheckSummary, VideoQualityReviewHint } from "./video-project.js";
+export type { VideoTimelineClip } from "./video-narrative.js";
 export declare const name = "oh-story";
 export declare const inject: string[];
 /** DSH owns models, providers, presets, permissions, roots, runs, and sessions. */
