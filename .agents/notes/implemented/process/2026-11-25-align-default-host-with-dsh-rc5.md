@@ -2,6 +2,8 @@
 
 Status: implemented
 
+工作台自定义约定由[上游行为维护约定](2026-11-26-upstream-behavior-with-ego-and-git.md)取代；本记录继续约束 DSH 默认版本与兼容检查。
+
 ## Problem
 
 单独同步上游时，[fork 集成记录](2026-11-25-sync-upstream-0.1.28.md)保留 DSH `0.2.2-rc.1`，以便与其余插件及日常宿主保持一致。整套插件升级需要同时更新开发依赖、宿主与验证入口，否则本地编译和实际运行使用不同的接口。

@@ -151,7 +151,6 @@ Built around `video-recaps/<project>/` with **Preview / Creative canvas / Docume
 
 - **Plain files first**: every view reads Markdown, JSON, and media files straight from your workspace with no hidden database — editing a file updates the project directly.
 - **Confirmation before paid calls**: short-drama media jobs show preflight checks and parameters in Chat and wait for your approval before calling external APIs.
-- **Open straight into creative work**: each profile with the plugin opens all four workbenches in an empty workspace by default. Collapse them any time; the browser remembers the choice per workspace. Turn off empty-workspace opening in profiles used for general work. See the [plugin configuration](packages/dsh-plugin/README.md#独立-profile-按需加载).
 
 ## Start creating
 
@@ -247,7 +246,7 @@ No — all four skill suites are standalone open-source repositories ([oh-story-
 
 ### Will installing this affect normal coding sessions in DSH?
 
-Profiles with the plugin open the workbench in empty folders by default. You can collapse it from the header or disable `openEmptyWorkbench` in profiles used for general work.
+No — the workbenches stay hidden unless the workspace contains creative project files. You can collapse them anytime from the header or isolate the plugin in a separate `story` profile as shown under [Installation](#installation).
 
 ### Does DeepSeek generate images and video itself? How is token usage billed?
 

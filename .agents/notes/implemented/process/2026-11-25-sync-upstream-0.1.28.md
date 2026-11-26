@@ -2,6 +2,8 @@
 
 Status: implemented
 
+工作台自定义约定由[上游行为维护约定](2026-11-26-upstream-behavior-with-ego-and-git.md)取代；本记录保留此次同步的版本、兼容处理与安装来源依据。
+
 ## Problem
 
 上游 `zenstory-ai/oh-story-dsh` 的 `v0.1.28` 更新三套创作技能和工作台，并默认使用 DSH `0.2.2-rc.5`。本 fork 的日常安装使用固定源码 Tag，宿主及其他插件仍固定为 `0.2.2-rc.1`；上游包名、浏览器入口和空工作区行为也不同。

@@ -675,60 +675,8 @@ async function main(): Promise<void> {
       // DSH 0.1.7 talks to DeepSeek's Anthropic-compatible Messages root, not the API root.
       DEEPSEEK_BASE_URL: mockDeepSeek?.baseURL ?? "https://api.deepseek.com/anthropic"
     };
-    if (!useRealDeepSeek) {
-      const writerHome = join(temporaryRoot, "writer-home");
-      const writerEnv = { ...env, DSH_HOME: writerHome };
-      run(process.execPath, [dshBin, "plugin", "--profile", "web", "add", archivePath], writerEnv);
-      const writerDocuments = join(temporaryRoot, "writer-documents");
-      await isolateFirstUseWorkspace(writerHome, writerDocuments);
-      const writerPort = await freePort();
-      const writerOrigin = `http://127.0.0.1:${String(writerPort)}`;
-      const writerLogs: string[] = [];
-      const writer = spawn(process.execPath, [dshBin, "web", "--no-open", "--port", String(writerPort)], {
-        cwd: repositoryRoot, env: writerEnv, stdio: ["ignore", "pipe", "pipe"]
-      });
-      writer.stdout?.on("data", (chunk: Buffer) => writerLogs.push(chunk.toString("utf8")));
-      writer.stderr?.on("data", (chunk: Buffer) => writerLogs.push(chunk.toString("utf8")));
-      try {
-        const writerUrl = await authorizeDsh(writerOrigin, writerLogs);
-        firstRunBrowser = await chromium.launch({ channel: browserChannel, headless: true });
-        const writerPage = await firstRunBrowser.newPage({ viewport: { width: 1_440, height: 900 } });
-        try {
-          await writerPage.goto(writerUrl, { waitUntil: "networkidle" });
-          await writerPage.getByRole("button", { name: /^(?:Continue|继续)$/u }).click({ timeout: 20_000 });
-          const writerTabs = writerPage.getByRole("tablist", { name: "创作工作台" });
-          await writerTabs.getByRole("tab", { name: "小说", selected: true }).waitFor({ timeout: 20_000 });
-          if (await writerTabs.getByRole("tab").count() !== 4
-            || await writerPage.getByRole("region", { name: "Oh Story 使用引导" }).count() !== 0) {
-            throw new Error("The empty-workspace Writer did not open all four workbenches without the welcome guide.");
-          }
-          await writerTabs.getByRole("tab", { name: "视频", exact: true }).waitFor();
-          await writerPage.getByRole("button", { name: "收起创作工作台" }).click();
-          await writerPage.getByRole("button", { name: "打开创作工作台" }).click();
-          await writerTabs.getByRole("tab", { name: "小说", selected: true }).waitFor();
-          await writerPage.reload({ waitUntil: "networkidle" });
-          // Opening an empty workspace is an intentional one-off visit. Its collapsed state
-          // is session-scoped until the workspace contains creative files, so a reload returns
-          // to the configured empty-workspace default rather than persisting this transient visit.
-          await writerTabs.getByRole("tab", { name: "小说", selected: true }).waitFor();
-        } catch (error) {
-          console.error("Empty-workspace workbench state:", await writerPage.evaluate(() => ({
-            text: document.body.innerText.slice(0, 5000),
-            preferences: Object.keys(localStorage).filter((key) => key.startsWith("oh-story.")).map((key) => [key, localStorage.getItem(key)]),
-            workbenches: [...document.querySelectorAll(".oh-story-split-surface")].map((element) => element.getAttribute("data-open"))
-          })));
-          throw error;
-        } finally {
-          await writerPage.close();
-        }
-      } finally {
-        await stopDshProcess(writer);
-      }
-    }
     run(process.execPath, [dshBin, "plugin", "--profile", "web", "add", archivePath], env);
     await isolateFirstUseWorkspace(dshHome, join(temporaryRoot, "documents"));
-    const profilePatch = join(dshHome, "profiles", "web", "cordis.patch.yml");
-    await writeFile(profilePatch, (await readFile(profilePatch, "utf8")) + "- id: oh-story\n  config:\n    openEmptyWorkbench: false\n");
     const port = new URL(origin).port;
     child = spawn(process.execPath, [dshBin, "web", "--no-open", "--port", port], {
       cwd: repositoryRoot, env, stdio: ["ignore", "pipe", "pipe"]
@@ -739,7 +687,7 @@ async function main(): Promise<void> {
 
     // A real first launch has no workspace or Session. Previously all browser
     // coverage started after fixture Sessions existed and missed this surface.
-    firstRunBrowser ??= await chromium.launch({ channel: browserChannel, headless: true });
+    firstRunBrowser = await chromium.launch({ channel: browserChannel, headless: true });
     const firstRunContext = await firstRunBrowser.newContext({ viewport: { width: 1_440, height: 900 } });
     const firstRunPage = await firstRunContext.newPage();
     const firstRunErrors: string[] = [];
@@ -1310,17 +1258,7 @@ async function main(): Promise<void> {
       } catch { /* workspace writes may already be allowed by the active preset */ }
       await plainWriteRequest;
       await waitForCompletedTurn(origin, plainSession.sessionId, beforePlainWrite);
-      try {
-        await page.getByRole("navigation", { name: "小说项目文件" }).waitFor({ state: "visible", timeout: 20_000 });
-      } catch (error) {
-        const workspaceResponse = await dshFetch(`${origin}/oh-story/workspace?sessionId=${encodeURIComponent(plainSession.sessionId)}`);
-        throw new Error(`First creative write did not reveal the workbench: ${JSON.stringify({
-          workspace: await workspaceResponse.json(),
-          history: (await sessionEvents(origin, plainSession.sessionId)).filter((event) => event.seq > beforePlainWrite),
-          pageErrors,
-          body: (await page.locator("body").innerText()).slice(-6_000)
-        })}`, { cause: error });
-      }
+      await page.getByRole("navigation", { name: "小说项目文件" }).waitFor({ state: "visible", timeout: 20_000 });
       const workbenchChatWidth = await chatWidth();
       if (await layoutScroller.getAttribute("data-oh-story-layout") !== "wide"
         || plainChatWidth < workbenchChatWidth + 200) {
@@ -2359,16 +2297,8 @@ async function main(): Promise<void> {
       }
       if (await videoChatToggle.isVisible()) throw new Error("500px Video Studio repeated the 制作/对话 switch with a Chat button.");
       const [, compactVideoToolbar, compactVideoProject, compactVideoViews] = compactVideoBoxes;
-      const controlsOverlap = compactVideoProject !== null && compactVideoViews !== null
-        && compactVideoProject.x < compactVideoViews.x + compactVideoViews.width
-        && compactVideoProject.x + compactVideoProject.width > compactVideoViews.x
-        && compactVideoProject.y < compactVideoViews.y + compactVideoViews.height
-        && compactVideoProject.y + compactVideoProject.height > compactVideoViews.y;
-      if (!compactVideoToolbar || !compactVideoProject || !compactVideoViews || compactVideoToolbar.height > 240
-        || compactVideoProject.x < compactVideoToolbar.x || compactVideoProject.x + compactVideoProject.width > compactVideoToolbar.x + compactVideoToolbar.width + 1
-        || compactVideoViews.x < compactVideoToolbar.x || compactVideoViews.x + compactVideoViews.width > compactVideoToolbar.x + compactVideoToolbar.width + 1
-        || controlsOverlap) {
-        throw new Error(`500px Video Studio did not arrange its narrow project and view controls without overlap: ${JSON.stringify(compactVideoBoxes)}`);
+      if (!compactVideoToolbar || !compactVideoProject || !compactVideoViews || compactVideoToolbar.height > 110 || Math.abs(compactVideoProject.y + compactVideoProject.height / 2 - compactVideoViews.y - compactVideoViews.height / 2) > 4) {
+        throw new Error(`500px Video Studio stacked its project and view controls: ${JSON.stringify(compactVideoBoxes)}`);
       }
       await compactVideoStudioTab.focus();
       await compactVideoStudioTab.press("ArrowRight");
@@ -3215,12 +3145,6 @@ async function main(): Promise<void> {
         await settings.waitFor({ state: "detached" });
       }
       if (pageErrors.length > 0) throw new Error(`Browser module raised errors: ${pageErrors.join("; ")}`);
-      } catch (error) {
-        throw new Error(`${error instanceof Error ? error.message : String(error)}; workbench browser state: ${JSON.stringify({
-          body: (await page.locator("body").innerText()).slice(-8_000),
-          iframes: await page.locator("iframe").evaluateAll((frames) => frames.map((frame) => ({ title: frame.title, src: frame.src }))),
-          pageErrors
-        })}`, { cause: error });
       } finally {
         await browser.close();
       }
@@ -3240,7 +3164,7 @@ async function main(): Promise<void> {
       uiSlots: usesConnectionFetch
         ? ["conversation.hero.frame", "shell.overlay", "plugins.bundle.config", "tool.call.toolview"]
         : ["shell.overlay", "plugins.bundle.config", "tool.call.toolview"],
-      workbenchGate: "creative-project-or-enabled-config",
+      workbenchGate: "creative-project-only",
       workbenchCollapse: "per-workspace",
       workbenchTabs: "per-workspace-hide-restore-persist",
       threeColumn: true,

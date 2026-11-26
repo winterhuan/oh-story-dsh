@@ -2,6 +2,8 @@
 
 Status: implemented
 
+本记录的默认展开和配置项已由[上游行为维护约定](../process/2026-11-26-upstream-behavior-with-ego-and-git.md)取代；按工作区保存用户主动展开与收起的选择仍由上游提供。
+
 ## Problem
 
 用户打开空工作区时，只能看到 DSH 会话和入门提示。需要先写出文件才能浏览四种工作台。

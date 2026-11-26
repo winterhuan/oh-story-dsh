@@ -1,5 +1,8 @@
 /**
- * The conversation layout follows the workspace and its saved display preference.
+ * DSH is a general Harness: one installed plugin must not turn every Session
+ * into a writing surface. The workbench claims the conversation layout only for
+ * a workspace that actually holds creative work, and the creator can always
+ * take the layout back.
  */
 
 export type WorkbenchPreference = "open" | "closed";
@@ -22,9 +25,9 @@ export function hasCreativeProject(workspace: WorkbenchWorkspace | undefined): b
     || workspace.games.length > 0;
 }
 
-/** Apply the creator's choice before the host and workspace default. */
-export function resolveWorkbenchOpen(preference: WorkbenchPreference | undefined, workbenchAvailable: boolean): boolean {
-  return preference === undefined ? workbenchAvailable : preference === "open";
+/** An explicit creator choice always wins over what the workspace happens to contain. */
+export function resolveWorkbenchOpen(preference: WorkbenchPreference | undefined, creativeProject: boolean): boolean {
+  return preference === undefined ? creativeProject : preference === "open";
 }
 
 export function workbenchPreferenceKey(cwd: string): string {
