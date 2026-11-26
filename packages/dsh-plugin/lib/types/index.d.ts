@@ -17,8 +17,6 @@ export declare const inject: string[];
 export interface Config {
     readonly editorMaxBytes?: number;
     readonly trustedHosts?: string[];
-    /** Opens the workbench for empty workspaces; set false in general-purpose profiles. */
-    readonly openEmptyWorkbench?: boolean;
     readonly welcomeGuide?: boolean | {
         readonly get: () => boolean | undefined;
     };

@@ -4,6 +4,7 @@ oh-story-dsh 是 DeepSeek Harness（DSH）的社区插件，发布一个包 `@wi
 
 ## 固定上游资产
 
+- 创作工作台、配置与文件跟随保持 `zenstory-ai/oh-story-dsh` 上游行为；fork 只维护官方 Ego 技能接入与预构建固定 Git 安装适配，范围见[维护约定](.agents/notes/implemented/process/2026-11-26-upstream-behavior-with-ego-and-git.md)。
 - `packages/knowledge/{oh-story,drama,novel-to-game,video-recap}` 是四套上游 Skills 的固定副本，`manifest.json` 记录上游仓库、commit 与逐文件哈希。不要手工修改这些目录。
 - 只用 `pnpm assets:sync:{story,drama,game,video}`（或 `pnpm assets:sync` 全部）从相邻 checkout 同步，再跑 `pnpm assets:check`；同步提交连同 manifest 一起评审，`CHANGELOG.md` 写清上游版本号与提交。上游路径与破坏性版本的要求见 `CONTRIBUTING.md`「上游知识资产」。
 

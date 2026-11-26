@@ -1,5 +1,9 @@
 # Validation
 
+## Unreleased upstream behavior alignment
+
+The working tree restores upstream `v0.1.28` workbench behavior while retaining official Ego integration and fixed Git publication. Windows validation uses an isolated local tarball profile; it does not update the daily remote installation. Evidence for this change is separate from the historical release checks below.
+
 Upstream validation record: `@oh-story/dsh` 0.1.28 on DeepSeek Harness `0.2.2-rc.5`, with release-gate coverage of `0.2.0-rc.2` and real `deepseek-official/deepseek-flash` provider validation. Local aggregate acceptance passed on 2026-11-22.
 
 ## 0.1.28 release evidence
@@ -351,8 +355,7 @@ The deterministic packaged Role path is part of every release gate. Paid real-pr
 - Browser module loading and official UI slot registrations (`shell.overlay`, `plugins.bundle.config`, `tool.call.toolview`);
 - streamed `write` tool following in the file tree and editor across DSH's pre-dispatch window, disk reconciliation, human-draft conflict protection, and Chat file-link navigation;
 - end-to-end `oh_story_role` execution (`narrative-writer` child reading a pinned `story-setup` reference via `oh_story_bundled_reference` and returning to the parent Session);
-- empty-workspace opening by default, saved collapse/restore across reloads, and the profile opt-out;
-- with `openEmptyWorkbench: false`, first-launch `WelcomeGuide` rendering on blank default-workspace Sessions, 500 px viewport containment, persistent dismissal into `profiles/web/cordis.patch.yml` (`welcomeGuide: false`), re-enabling from `Plugins → @winterhuan/oh-story-dsh`, and automatic retirement once a conversation starts;
+- first-launch `WelcomeGuide` rendering on blank default-workspace Sessions, 500 px viewport containment, persistent dismissal into `profiles/web/cordis.patch.yml` (`welcomeGuide: false`), re-enabling from `Plugins → @winterhuan/oh-story-dsh`, and automatic retirement once a conversation starts;
 - per-workspace **Workbench settings** tab hiding, last-tab protection, Session A/B/A sharing, reload persistence, workspace isolation, and **Show all** restoration, alongside collapsing and reopening the whole workbench;
 - `小说` / `短剧` switching, recursive directory trees, five-document exclusivity, and safe Markdown preview (including hidden HTML comments outside code);
 - `游戏` live iframe input, CSP inline-script blocking, loopback-alias `localStorage` save/restore, explicit new-build loading, runtime preservation across tab/Chat/workbench switches, 500×900 `制作 / 对话` switching, creative canvas keyboard movement, and no QA tab;

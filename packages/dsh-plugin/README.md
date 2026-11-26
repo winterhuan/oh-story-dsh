@@ -15,16 +15,16 @@
 
 ## 安装与启动
 
-默认配套 DSH `0.2.2-rc.1`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前全局安装）：
+默认配套 DSH `0.2.2-rc.5`，需要 **Node.js 24.9+**（命令已自带临时 `pnpm`，无需提前全局安装）：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
-npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile web add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin" &&
+npx -y @deepseek-ai/dsh@0.2.2-rc.5 web
 ```
 
 保持终端开启；浏览器若未自动弹出，复制终端打印的完整 `http://127.0.0.1:3080/?token=...` 链接打开（首次登录靠链接里的 `token` 认证）。进入后在「设置 → 模型」填入 Provider 与 API Key，或在启动前设置环境变量 `DEEPSEEK_API_KEY`；只看本地已有工程可在首次引导点「稍后配置 / Configure later」。
 
-安装和启动请保持同一个 DSH 版本。默认配套 `0.2.2-rc.1`，同时兼容 `>=0.2.0-rc.2 <0.2.1-0`、`>=0.2.1-alpha.1 <0.2.2-0` 与 `>=0.2.2-alpha.2 <0.2.3-0`（含 `0.2.2-rc.1`、`0.2.1-rc.5` 与 `0.2.0-rc.2`）。
+安装和启动请保持同一个 DSH 版本。默认配套 `0.2.2-rc.5`，同时兼容 `>=0.2.0-rc.2 <0.2.1-0`、`>=0.2.1-alpha.1 <0.2.2-0` 与 `>=0.2.2-alpha.2 <0.2.3-0`（含 `0.2.2-rc.1`、`0.2.1-rc.5` 与 `0.2.0-rc.2`）。
 
 ## 浏览器资料与扫榜
 
@@ -68,23 +68,15 @@ npx -y @deepseek-ai/dsh@0.2.2-rc.1 web
 想让默认 `web` 环境保持原样，可把插件装进独立的 `story` profile：
 
 ```bash
-npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.1 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
+npx -y --package pnpm@11.7.0 --package @deepseek-ai/dsh@0.2.2-rc.5 dsh plugin --profile story add "git+https://github.com/winterhuan/oh-story-dsh.git#v0.1.32&path:/packages/dsh-plugin"
 ```
 
-将 `~/.dsh/profiles/story/package.json` 中的 `dsh.profile.bundles` 设为 `["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@winterhuan/oh-story-dsh"]`，随后即可用 `npx -y @deepseek-ai/dsh@0.2.2-rc.1 --profile story --port 3081` 独立启动创作工作台。
-
-工作台默认在空工作区也直接打开。若 profile 还用于普通工作，可以将该 profile 的 `cordis.patch.yml` 设为以下配置来保持空工作区原样，然后重启 DSH。识别到创作项目的工作区仍自动展开。
-
-```yaml
-- id: oh-story
-  config:
-    openEmptyWorkbench: false
-```
+将 `~/.dsh/profiles/story/package.json` 中的 `dsh.profile.bundles` 设为 `["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@winterhuan/oh-story-dsh"]`，随后即可用 `npx -y @deepseek-ai/dsh@0.2.2-rc.5 --profile story --port 3081` 独立启动创作工作台。
 
 ## 常见问题与升级说明
 
 - **安装报 `pnpm not found on PATH`，或要求认证 / 端口冲突**：执行上方带 `--package pnpm@11.7.0` 的完整安装命令；提示需要认证时打开终端打印的完整 `?token=...` 链接，端口 `3080` 被占用可改用 `web --port 3081`。
-- **未看到工作台标签或技能未生效**：确认工作区会话没有手动收起工作台；有创作项目的工作区自动展开，配置开启时空工作区也会展开。空目录创作仍需当前会话模式支持技能加载（如 `Standard`、`PTC`；`Minimal` 不加载插件技能），可在 Chat 里运行 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap`。已收起的工作台可点会话角落的「创作工作台」恢复。若本机 `~/.agents/skills` 装过同名 Skill，启动前设 `DSH_AGENTS_HOME=~/.dsh-agents` 即可使用插件内置版本。
+- **看不到工作台标签或技能未生效**：打开已有作品目录即可自动展开工作台；从空目录新建作品时，请确认当前会话模式支持加载技能（如默认的 `Standard` 或 `PTC`，`Minimal` 模式不加载插件技能），在对话里发 `/story`、`/short-drama`、`/novel-to-game quick` 或 `/video-recap` 写出首个项目文件即可。已收起的工作台可点会话角落的「创作工作台」恢复；空白会话的入门引导可点右上角「关闭欢迎引导」，或在「插件 → `@winterhuan/oh-story-dsh`」随时开关。若本机 `~/.agents/skills` 装过同名 Skill，启动前设 `DSH_AGENTS_HOME=~/.dsh-agents` 即可使用插件内置版本。
 - **旧项目升级提示**：Drama Skills `0.12.0` 前的短剧文档只浏览无需改动，续写或跑 `creator_markdown_check.py` 前需将旧字段名改为现行直白名称；video-recap `0.7+` 续跑旧 `work/` 时需去掉 `--edit-mode dub`、`--review-narration` 等已移除参数。完整说明见仓库 [README](https://github.com/zenstory-ai/oh-story-dsh#升级到新版本后要做什么) 与 [CHANGELOG](https://github.com/winterhuan/oh-story-dsh/blob/main/CHANGELOG.md)。
 
 ---

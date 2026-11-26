@@ -9,6 +9,13 @@
 `Removed` / `Fixed` / `Security`），正文为中文。收紧到会拒绝旧输入的改动记入 `Changed`。
 同步上游时写清上游版本号与提交，便于定位。
 
+## [Unreleased]
+
+### Changed
+
+- 工作台和文件跟随恢复 `zenstory-ai/oh-story-dsh` 的 `v0.1.28`（`eedf5dc9179f5e5a69dffecd19643f890ed5f977`）行为；空工作区显示上游欢迎引导，已有创作项目自动展开。移除 fork 的 `openEmptyWorkbench` 配置。
+- 保留官方 `ego-browser` 接入、`@winterhuan/oh-story-dsh` 包名与随源码提交预构建产物的固定 Git 安装方式。
+
 ## [0.1.32] - 2026-11-25
 
 ### Added

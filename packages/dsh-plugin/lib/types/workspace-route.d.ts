@@ -15,7 +15,6 @@ export interface WorkbenchStylesheetAsset {
 export interface WorkspaceRouteOptions {
     readonly maxBytes: number;
     readonly trustedHosts?: readonly string[];
-    readonly openEmptyWorkbench?: boolean;
     readonly welcomeGuide?: () => boolean;
     /** Optional override for signed game-preview tokens (defaults to a per-mount random 32-byte key). */
     readonly previewTokenSecret?: Uint8Array;
@@ -84,7 +83,6 @@ export interface GameProjectSummary {
 }
 export interface WorkspacePayload {
     readonly cwd: string;
-    readonly openEmptyWorkbench: boolean;
     readonly files: readonly WorkspaceFile[];
     readonly truncated: boolean;
     readonly games: readonly GameProjectSummary[];

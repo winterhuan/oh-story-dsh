@@ -3670,7 +3670,6 @@ async function handleApiFetch(context, routeName, request, options, previewSecre
       const metadataErrors = [...trackingErrors, dramaError].filter((value) => value !== void 0);
       const payload = {
         cwd: realm.cwd,
-        openEmptyWorkbench: options.openEmptyWorkbench ?? true,
         files,
         truncated,
         games,
@@ -3901,7 +3900,6 @@ var inject = ["skills", "subagents", "tools", "typert", "webServer"];
 var Config = z.object({
   editorMaxBytes: z.natural().min(65536).max(8388608).default(2097152),
   trustedHosts: z.array(String).default([]),
-  openEmptyWorkbench: z.boolean().default(true),
   welcomeGuide: z.boolean().default(true).volatile()
 });
 function readWelcomeGuideConfig(value) {
@@ -3924,7 +3922,6 @@ async function apply(context, config = {}) {
   registerWorkspaceRoute(context, {
     maxBytes: config.editorMaxBytes ?? 2097152,
     trustedHosts,
-    openEmptyWorkbench: config.openEmptyWorkbench ?? true,
     welcomeGuide: () => readWelcomeGuideConfig(config.welcomeGuide)
   });
   context.effect(() => {

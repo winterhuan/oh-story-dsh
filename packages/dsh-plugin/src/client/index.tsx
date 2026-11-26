@@ -303,7 +303,6 @@ interface WorkspaceFile {
 }
 interface WorkspacePayload {
   readonly cwd: string;
-  readonly openEmptyWorkbench?: boolean | undefined;
   readonly files: readonly WorkspaceFile[];
   readonly truncated?: boolean | undefined;
   readonly games: readonly GameProject[];
@@ -1000,7 +999,6 @@ function CreativeWorkbench({
   open,
   compactLayout,
   creativeProject,
-  workbenchAvailable,
   useStore,
   actions
 }: {
@@ -1025,7 +1023,6 @@ function CreativeWorkbench({
   readonly open: boolean;
   readonly compactLayout: boolean;
   readonly creativeProject: boolean;
-  readonly workbenchAvailable: boolean;
 } & Pick<WorkbenchSlotProps, "useStore" | "actions" | "sendProductionPrompt" | "focusProductionChat" | "cancelProduction" | "removeQueuedProduction">) {
   const activities = useMemo(
     () => fileMutations(runningCalls, partial, undispatched),
@@ -1520,9 +1517,7 @@ function CreativeWorkbench({
         if (paths.has(path) || activityPaths.has(path)) continue;
         // A write that just settled is on disk before the workspace reload lists it; keep its
         // preview (and so the selection) until then. A denied write never settles and is pruned.
-        // The Turn can finish before the workspace response, so this cannot depend on
-        // sessionRunning still being true.
-        if (value.source === "agent" && path === settledPath) continue;
+        if (value.source === "agent" && sessionRunning && path === settledPath) continue;
         if (value.source === "human" && value.content !== value.saved) {
           if (value.missing !== true) {
             next[path] = { ...value, missing: true, error: "文件已从工作区移除。本地草稿仍保留，可复制后放弃草稿。" };
@@ -2126,7 +2121,7 @@ function CreativeWorkbench({
     // Without creative work there is nothing to reveal, so the plugin leaves the
     // official conversation exactly as DSH renders it. A failed workspace request
     // still offers the way in, because that error is only readable inside the workbench.
-    if (!workbenchAvailable && error === undefined) {
+    if (!creativeProject && error === undefined) {
       return null;
     }
     return <div ref={surfaceRef} className="oh-story-split-surface" data-open="false">
@@ -2502,16 +2497,15 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
   }, [actions, selectedWorkbench, workbench]);
   const chosenPreference = useStore((memory) => memory.workbenchPreference);
   const creativeProject = hasCreativeProject(workspace);
-  const workbenchAvailable = workspace?.openEmptyWorkbench === true || creativeProject;
   const welcomeController = activeWelcomeGuideController;
   // DSH 0.1.7 opens a fresh home straight into a blank Session in its default workspace, so
   // "no Session yet" no longer marks a first launch. A blank Session without creative work does.
   const sessionBlank = useSessions((state) => state.byId[sessionId]?.blank === true);
   useEffect(() => {
-    if (sessionBlank && workspace !== undefined && !workbenchAvailable && workspace.welcomeGuide === undefined) {
+    if (sessionBlank && workspace !== undefined && !creativeProject && workspace.welcomeGuide === undefined) {
       welcomeController.ensureFallbackHostConfig();
     }
-  }, [workbenchAvailable, sessionBlank, welcomeController, workspace]);
+  }, [creativeProject, sessionBlank, welcomeController, workspace]);
   // The Session Store holds this Session's choice; localStorage carries the workspace's
   // last choice across restarts. Reading it here keeps the decision in the same render
   // that learns the workspace, so a collapsed workbench never flashes the layout open.
@@ -2520,13 +2514,13 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
     [workspace?.cwd]
   );
   const preference = chosenPreference ?? storedPreference;
-  const open = resolveWorkbenchOpen(preference, workbenchAvailable);
+  const open = resolveWorkbenchOpen(preference, creativeProject);
   const [compactLayout, setCompactLayout] = useState(false);
   const heroWelcome = useSyncExternalStore(subscribeHeroWelcome, getHeroWelcomeSnapshot, getHeroWelcomeSnapshot);
   const welcomeSnapshot = useSyncExternalStore(welcomeController.subscribe, welcomeController.getSnapshot, welcomeController.getSnapshot);
   const startWelcomePrompt = useCallback((prompt: string): boolean => focusProductionChat(prompt), [focusProductionChat]);
   useLayoutEffect(() => {
-    const suppress = !sessionBlank || workspaceLoading || workspace === undefined || workbenchAvailable || open;
+    const suppress = !sessionBlank || workspaceLoading || workspace === undefined || creativeProject || open;
     sessionHeroWelcomeState.set(sessionId, {
       suppress,
       workspaceWelcomeGuide: workspace?.welcomeGuide,
@@ -2537,7 +2531,7 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
       sessionHeroWelcomeState.delete(sessionId);
       publishHeroWelcomeSnapshot();
     };
-  }, [workbenchAvailable, open, sessionBlank, sessionId, startWelcomePrompt, workspace, workspaceLoading]);
+  }, [creativeProject, open, sessionBlank, sessionId, startWelcomePrompt, workspace, workspaceLoading]);
   useLayoutEffect(() => {
     const doc = marker.current?.ownerDocument;
     if (doc === undefined) return;
@@ -2727,7 +2721,7 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
     && sessionBlank
     && !workspaceLoading
     && workspace !== undefined
-    && !workbenchAvailable
+    && !creativeProject
     && !open
     && resolveWelcomeGuideEnabled({
       formStatus: welcomeSnapshot.formStatus,
@@ -2768,7 +2762,6 @@ function SessionWorkbenchBridge({ sessionId, useSession, useSessions, useProject
       open={open}
       compactLayout={compactLayout}
       creativeProject={creativeProject}
-      workbenchAvailable={workbenchAvailable}
       sendProductionPrompt={sendProductionPrompt}
       focusProductionChat={focusProductionChat}
       cancelProduction={cancelProduction}
@@ -2938,11 +2931,10 @@ export function apply(context: ClientContext): void {
     name: "plugins.bundle.config",
     key: "@winterhuan/oh-story-dsh"
   }, ({ view }) => <><OnceWorkbenchStylesheet /><OhStoryPluginConfig view={view} controller={controller} /></>));
-  // The rc.1 slot types predate HOC slots; newer hosts own this deferred registration.
-  Reflect.apply(context.slots.inject.bind(context.slots), undefined, ["conversation.hero.frame", () => Reflect.apply(context.slots.register.bind(context.slots), undefined, [{
+  context.slots.inject("conversation.hero.frame", () => context.slots.register({
     name: "conversation.hero.frame",
     id: "oh-story-welcome"
-  }, HeroWelcomeFrame]) as () => void]);
+  }, HeroWelcomeFrame));
   context.slots.inject("shell.overlay", () => {
     const disposeSeat = context.slots.register({
       name: "shell.overlay",
